@@ -1,21 +1,21 @@
 package TeamProject;
 
 import javax.swing.*;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.awt.event.*;
 
 public class SettingFrame {
     public static void main(String[] args) {
         JFrame f = new JFrame("사용자 설정");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(500, 400);
+        f.setSize(500, 600);
         f.setLocationRelativeTo(null);
 
         JPanel p1 = new JPanel(new GridBagLayout());
@@ -23,41 +23,9 @@ public class SettingFrame {
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel l1 = new JLabel("폴더 추가");
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        p1.add(l1, gbc);
-
-        JTextField text1 = new JTextField(90);
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        p1.add(text1, gbc);
-
-        JButton saveButton1 = new JButton("저장");
-        saveButton1.setPreferredSize(new Dimension(80, 25));
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        p1.add(saveButton1, gbc);
-
-        JLabel l2 = new JLabel("할일 추가");
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        p1.add(l2, gbc);
-
-        JTextField text2 = new JTextField(90);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        p1.add(text2, gbc);
-
-        JButton saveButton2 = new JButton("저장");
-        saveButton2.setPreferredSize(new Dimension(80, 25));
-        gbc.gridx = 2;
-        gbc.gridy = 1;
-        p1.add(saveButton2, gbc);
-
         JLabel l3 = new JLabel("할일 수정");
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 0;
         gbc.gridwidth = 3;
         p1.add(l3, gbc);
 
@@ -83,14 +51,13 @@ public class SettingFrame {
         JTree tree = new JTree(treeModel);
         tree.setEditable(true);
 
-        // 드래그 앤 드롭 기능 추가
         tree.setDragEnabled(true);
         tree.setDropMode(DropMode.ON_OR_INSERT);
         tree.setTransferHandler(new TreeTransferHandler());
 
         JScrollPane treeView = new JScrollPane(tree);
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 1;
         gbc.gridwidth = 3;
         gbc.gridheight = 4;
         gbc.fill = GridBagConstraints.BOTH;
@@ -100,151 +67,211 @@ public class SettingFrame {
 
         JLabel l4 = new JLabel("이벤트 목록");
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 5;
         gbc.gridwidth = 3;
         gbc.gridheight = 1;
-        gbc.insets = new Insets(5, 10, 0, 10); // 공백 줄이기
+        gbc.insets = new Insets(5, 10, 0, 10);
         p1.add(l4, gbc);
 
-        JPanel eventPanel = new JPanel();
-        eventPanel.setLayout(new BoxLayout(eventPanel, BoxLayout.Y_AXIS));
-        
-        JScrollPane eventScrollPane = new JScrollPane(eventPanel);
+        DefaultMutableTreeNode eventRoot = new DefaultMutableTreeNode("이벤트 목록");
+        DefaultMutableTreeNode birthdayNode = new DefaultMutableTreeNode("생일");
+        birthdayNode.add(new DefaultMutableTreeNode("엄마"));
+        birthdayNode.add(new DefaultMutableTreeNode("아빠"));
+
+        DefaultMutableTreeNode meetingNode = new DefaultMutableTreeNode("약속");
+        meetingNode.add(new DefaultMutableTreeNode("삼식"));
+        meetingNode.add(new DefaultMutableTreeNode("점순"));
+
+        eventRoot.add(birthdayNode);
+        eventRoot.add(meetingNode);
+
+        DefaultTreeModel eventTreeModel = new DefaultTreeModel(eventRoot);
+        JTree eventTree = new JTree(eventTreeModel);
+        eventTree.setEditable(true);
+
+        JScrollPane eventTreeView = new JScrollPane(eventTree);
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        gbc.gridwidth = 3;
+        gbc.gridheight = 2;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        p1.add(eventTreeView, gbc);
+
+        JLabel l5 = new JLabel("알림 시간 설정");
         gbc.gridx = 0;
         gbc.gridy = 8;
         gbc.gridwidth = 3;
+        gbc.gridheight = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+        p1.add(l5, gbc);
+
+        JPanel notificationPanel = new JPanel();
+        notificationPanel.setLayout(new GridBagLayout());
+        GridBagConstraints npGbc = new GridBagConstraints();
+        npGbc.insets = new Insets(5, 10, 5, 10);
+        npGbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel todoLabel = new JLabel("할일:");
+        npGbc.gridx = 0;
+        npGbc.gridy = 0;
+        notificationPanel.add(todoLabel, npGbc);
+
+        JComboBox<String> todoComboBox = new JComboBox<>();
+        npGbc.gridx = 1;
+        npGbc.gridy = 0;
+        notificationPanel.add(todoComboBox, npGbc);
+
+        JCheckBox todoCheckBox = new JCheckBox();
+        npGbc.gridx = 2;
+        npGbc.gridy = 0;
+        notificationPanel.add(todoCheckBox, npGbc);
+
+        JLabel eventLabel = new JLabel("이벤트:");
+        npGbc.gridx = 0;
+        npGbc.gridy = 1;
+        notificationPanel.add(eventLabel, npGbc);
+
+        JComboBox<String> eventComboBox = new JComboBox<>();
+        npGbc.gridx = 1;
+        npGbc.gridy = 1;
+        notificationPanel.add(eventComboBox, npGbc);
+
+        JCheckBox eventCheckBox = new JCheckBox();
+        npGbc.gridx = 2;
+        npGbc.gridy = 1;
+        notificationPanel.add(eventCheckBox, npGbc);
+
+        JLabel timeLabel = new JLabel("시간:");
+        npGbc.gridx = 0;
+        npGbc.gridy = 2;
+        notificationPanel.add(timeLabel, npGbc);
+
+        JCheckBox cb5Min = new JCheckBox("5분 전");
+        JCheckBox cb10Min = new JCheckBox("10분 전");
+        JCheckBox cb15Min = new JCheckBox("15분 전");
+        JCheckBox cb30Min = new JCheckBox("30분 전");
+        JCheckBox cb1Hour = new JCheckBox("1시간 전");
+        JCheckBox cb1Day = new JCheckBox("하루 전");
+        JCheckBox cb1Week = new JCheckBox("일주일 전");
+        JCheckBox cb3Days = new JCheckBox("3일 전");
+
+        JPanel checkBoxPanel = new JPanel(new GridLayout(2, 4));
+        checkBoxPanel.add(cb5Min);
+        checkBoxPanel.add(cb10Min);
+        checkBoxPanel.add(cb15Min);
+        checkBoxPanel.add(cb30Min);
+        checkBoxPanel.add(cb1Hour);
+        checkBoxPanel.add(cb1Day);
+        checkBoxPanel.add(cb1Week);
+        checkBoxPanel.add(cb3Days);
+
+        npGbc.gridx = 1;
+        npGbc.gridy = 2;
+        npGbc.gridwidth = 2;
+        notificationPanel.add(checkBoxPanel, npGbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 9;
+        gbc.gridwidth = 3;
         gbc.gridheight = 2;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        p1.add(eventScrollPane, gbc);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        p1.add(notificationPanel, gbc);
 
-        ArrayList<JTextField> eventButtons = new ArrayList<>();
-        ArrayList<JComboBox<String>> eventCombos = new ArrayList<>();
+        JButton saveButton = new JButton("저장");
+        saveButton.addActionListener(e -> {
+            String selectedEvent = (String) eventComboBox.getSelectedItem();
+            String selectedTodo = (String) todoComboBox.getSelectedItem();
 
-        String[] items = {"5분 전", "10분 전", "15분 전", "30분 전", "1시간 전", "하루 전", "일주일 전"};
+            StringBuilder sb = new StringBuilder();
+            sb.append("저장된 알림 설정:\n");
+            if (todoCheckBox.isSelected() && selectedTodo != null) {
+                sb.append("할일: ").append(selectedTodo).append("\n");
+            }
+            if (eventCheckBox.isSelected() && selectedEvent != null) {
+                sb.append("이벤트: ").append(selectedEvent).append("\n");
+            }
+            sb.append("알림 시간: ");
+            if (cb5Min.isSelected()) sb.append("5분 전 ");
+            if (cb10Min.isSelected()) sb.append("10분 전 ");
+            if (cb15Min.isSelected()) sb.append("15분 전 ");
+            if (cb30Min.isSelected()) sb.append("30분 전 ");
+            if (cb1Hour.isSelected()) sb.append("1시간 전 ");
+            if (cb1Day.isSelected()) sb.append("하루 전 ");
+            if (cb1Week.isSelected()) sb.append("일주일 전 ");
+            if (cb3Days.isSelected()) sb.append("3일 전 ");
 
-        addEventRow(eventPanel, eventButtons, eventCombos, "생일", items);
-        addEventRow(eventPanel, eventButtons, eventCombos, "약속", items);
+            JOptionPane.showMessageDialog(null, sb.toString());
 
-        JButton addButton = new JButton("+");
-        addButton.addActionListener(e -> addEventRow(eventPanel, eventButtons, eventCombos, "", items));
-        eventPanel.add(addButton);
+            // 체크박스 초기화
+            cb5Min.setSelected(false);
+            cb10Min.setSelected(false);
+            cb15Min.setSelected(false);
+            cb30Min.setSelected(false);
+            cb1Hour.setSelected(false);
+            cb1Day.setSelected(false);
+            cb1Week.setSelected(false);
+            cb3Days.setSelected(false);
 
-        JTabbedPane tab = new JTabbedPane();
-        tab.add("캘린더", new JTextArea());
-        tab.add("과목별 일정", new JTextArea());
-        tab.add("D-Day", new JTextArea());
-        tab.add("통계", new JTextArea());
-        tab.add("사용자 설정", p1);
+            todoCheckBox.setSelected(false);
+            eventCheckBox.setSelected(false);
+        });
+        
+        npGbc.gridx = 0;
+        npGbc.gridy = 3;
+        npGbc.gridwidth = 3;
+        npGbc.gridheight = 1;
+        notificationPanel.add(saveButton, npGbc);
 
-        f.add(tab);
+        JPanel tabPanel = new JPanel(new BorderLayout());
+        tabPanel.add(p1, BorderLayout.CENTER);
+
+        f.add(tabPanel);
         f.setVisible(true);
 
-       
-        saveButton1.addActionListener(new ActionListener() {
+        updateComboBoxes(tree, eventTree, eventComboBox, todoComboBox);
+        tree.addTreeExpansionListener(new TreeExpansionListener() {
+            public void treeExpanded(TreeExpansionEvent event) {
+                updateComboBoxes(tree, eventTree, eventComboBox, todoComboBox);
+            }
+
+            public void treeCollapsed(TreeExpansionEvent event) {
+                updateComboBoxes(tree, eventTree, eventComboBox, todoComboBox);
+            }
+        });
+        eventTree.addTreeExpansionListener(new TreeExpansionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                String folderName = text1.getText();
-                if (!folderName.isEmpty()) {
-                    new AddFolderWorker(folderName, treeModel, jcomponent).execute();
-                    text1.setText(""); // 입력칸 지우기
-                }
+            public void treeExpanded(TreeExpansionEvent event) {
+                updateComboBoxes(tree, eventTree, eventComboBox, todoComboBox);
             }
-        });
 
-        saveButton2.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                String todo = text2.getText();
-                if (!todo.isEmpty()) {
-                    new AddTodoWorker(todo, treeModel, jcomponent).execute();
-                    text2.setText(""); 
-                }
+            public void treeCollapsed(TreeExpansionEvent event) {
+                updateComboBoxes(tree, eventTree, eventComboBox, todoComboBox);
             }
         });
     }
 
-    static class AddFolderWorker extends SwingWorker<Void, Void> {
-        private String folderName;
-        private DefaultTreeModel treeModel;
-        private DefaultMutableTreeNode root;
+    private static void updateComboBoxes(JTree tree, JTree eventTree, JComboBox<String> eventComboBox, JComboBox<String> todoComboBox) {
+        eventComboBox.removeAllItems();
+        todoComboBox.removeAllItems();
 
-        public AddFolderWorker(String folderName, DefaultTreeModel treeModel, DefaultMutableTreeNode root) {
-            this.folderName = folderName;
-            this.treeModel = treeModel;
-            this.root = root;
-        }
+        DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) tree.getModel().getRoot();
+        DefaultMutableTreeNode root2 = (DefaultMutableTreeNode) eventTree.getModel().getRoot();
 
-        @Override
-        protected Void doInBackground() throws Exception {
-            Thread.sleep(2000); // 예시로 2초 대기
-            DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(folderName);
-            SwingUtilities.invokeLater(() -> treeModel.insertNodeInto(newNode, root, root.getChildCount()));
-            return null;
-        }
-
-        @Override
-        protected void done() {
-            JOptionPane.showMessageDialog(null, "폴더 추가 완료: " + folderName);
-        }
+        addLeafNodesToComboBox(root1, todoComboBox);
+        addLeafNodesToComboBox(root2, eventComboBox);
     }
 
-    static class AddTodoWorker extends SwingWorker<Void, Void> {
-        private String todo;
-        private DefaultTreeModel treeModel;
-        private DefaultMutableTreeNode root;
-
-        public AddTodoWorker(String todo, DefaultTreeModel treeModel, DefaultMutableTreeNode root) {
-            this.todo = todo;
-            this.treeModel = treeModel;
-            this.root = root;
-        }
-
-        @Override
-        protected Void doInBackground() throws Exception {
-            Thread.sleep(2000); // 예시로 2초 대기
-            DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(todo);
-            SwingUtilities.invokeLater(() -> treeModel.insertNodeInto(newNode, root, root.getChildCount()));
-            return null;
-        }
-
-        @Override
-        protected void done() {
-            JOptionPane.showMessageDialog(null, "할일 추가 완료: " + todo);
-        }
-    }
-
-    private static void addEventRow(JPanel panel, ArrayList<JTextField> buttons, ArrayList<JComboBox<String>> combos, String buttonText, String[] items) {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JTextField button = new JTextField(buttonText, 10);
-        button.setEditable(true);
-        JComboBox<String> comboBox = new JComboBox<>(items);
-
-        comboBox.addActionListener(e -> {
-            if (comboBox.getSelectedItem().equals("직접 설정")) {
-                String input = JOptionPane.showInputDialog("알림 시간을 분 단위로 입력하세요:");
-                try {
-                    int minutes = Integer.parseInt(input);
-                    if (minutes > 0) {
-                        comboBox.setSelectedItem(minutes + "분 전");
-                    } else {
-                        JOptionPane.showMessageDialog(null, "양의 정수를 입력하세요.");
-                    }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(null, "올바른 숫자를 입력하세요.");
-                }
+    private static void addLeafNodesToComboBox(DefaultMutableTreeNode node, JComboBox<String> comboBox) {
+        if (node.isLeaf()) {
+            comboBox.addItem(node.toString());
+        } else {
+            for (int i = 0; i < node.getChildCount(); i++) {
+                addLeafNodesToComboBox((DefaultMutableTreeNode) node.getChildAt(i), comboBox);
             }
-        });
-
-        row.add(button);
-        row.add(comboBox);
-        buttons.add(button);
-        combos.add(comboBox);
-
-        panel.add(row, panel.getComponentCount() - 1);
-        panel.revalidate();
-        panel.repaint();
+        }
     }
 
     static class TreeTransferHandler extends TransferHandler {
