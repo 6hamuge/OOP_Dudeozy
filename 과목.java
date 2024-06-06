@@ -2,20 +2,40 @@ package Doo;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Font;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.plaf.FontUIResource;
 
-public class subject extends JFrame {
+public class pra extends JFrame {
+	
+public static void setUIFont(FontUIResource f) {
+		
+        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof FontUIResource) {
+                UIManager.put(key, f);
+            }
+        }
+}
+	
+
 	JTabbedPane t = new JTabbedPane();
 	JTable table3 = new JTable();
     JTable table1 = new JTable();
     JTable table2 = new JTable();
+    
+    
 
     public pra() {
+    	setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 16)));
         super.setTitle("할일");
 
         Object[][] data1 = {
@@ -119,6 +139,7 @@ public class subject extends JFrame {
         JScrollPane scrollPane1 = new JScrollPane(table1);
         JScrollPane scrollPane2 = new JScrollPane(table2);
         JScrollPane scrollPane3 = new JScrollPane(table3);
+        setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 16)));
         t.add("공학수학", scrollPane1);
         t.add("컴퓨터아키텍쳐", scrollPane3);
         t.add("신화의 이해", scrollPane2);
@@ -136,6 +157,7 @@ public class subject extends JFrame {
         SwingUtilities.invokeLater(() -> new pra());
     }
 }
+//////////////////////////여기에서 부터는 수정하지마!! 이주영 정신차려/////////////////////////// 취소선 긋기
 
 class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
     public CheckBoxRenderer() {
