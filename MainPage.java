@@ -8,6 +8,9 @@ import java.time.format.DateTimeFormatter;
 public class MainPage {
 	JFrame jf;
 	JComboBox<String> subjects;
+	JComboBox<Integer> yearBox;
+    JComboBox<String> monthBox;
+    JComboBox<Integer> dayBox;
 	private JDesktopPane desktopPane;
 	
 	public MainPage() {
@@ -18,10 +21,10 @@ public class MainPage {
 		jf.setLayout(new BorderLayout());
 		
 		// calendar 생성
-		SimpleCalendar simpleCalendar = new SimpleCalendar(this);
+		Calendar Calendar = new Calendar(this);
 		
 		JInternalFrame calendar = new JInternalFrame("Calendar", true, true, true, true);
-		calendar.getContentPane().add(simpleCalendar); 
+		calendar.getContentPane().add(Calendar); 
 		calendar.setSize(960, 750);
 		calendar.setResizable(true); 
 		calendar.setIconifiable(false); 
@@ -31,6 +34,7 @@ public class MainPage {
 		
 		desktopPane = new JDesktopPane();
 		desktopPane.add(calendar);
+		desktopPane.moveToBack(calendar);
 		
 		// todolist 생성
 		DefaultListModel<String> todayListModel = new DefaultListModel<>();
@@ -67,13 +71,22 @@ public class MainPage {
 		inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		JPanel msgPanel = new JPanel();
 		JPanel optionPanel = new JPanel();
-		
+		//날짜 입력을 위한 panel 생성
+	    JPanel datePanel = new JPanel(new FlowLayout());
+	 
 		// label 생성
 		JLabel msgLabel = new JLabel("새로운 해야 할 일을 입력하세요", SwingConstants.CENTER);
 		msgLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 18));
+		
 		JLabel importanceLabel = new JLabel("중요도");
 		JLabel taskLabel = new JLabel("내용");
 		
+		// 연도, 월, 일 JComboBox 생성
+		yearBox = new JComboBox<>();
+	    monthBox = new JComboBox<>();
+	    dayBox = new JComboBox<>();
+	    setDefaultDate(today);
+	    
 		// textfield 생성
 		JTextField importance = new JTextField(5);
 		JTextField task = new JTextField(30);
@@ -91,6 +104,14 @@ public class MainPage {
 		optionPanel.add(subjects);
 		optionPanel.add(new JButton("입력"));
 		inputPanel.add(optionPanel, BorderLayout.SOUTH);
+		// datePanel
+		datePanel.add(yearBox);
+		datePanel.add(new JLabel("년"));
+	    datePanel.add(monthBox);
+	    datePanel.add(new JLabel("월"));
+	    datePanel.add(dayBox);
+	    datePanel.add(new JLabel("일"));
+	    inputPanel.add(datePanel, BorderLayout.CENTER);
 		
 		// frame에 panel들 집어넣기
 		jf.add(desktopPane, BorderLayout.CENTER);
@@ -110,4 +131,27 @@ public class MainPage {
 	public JDesktopPane getDesktopPane() {
         return desktopPane;
     }	
+	
+	// 연도, 월, 일 JComboBox 초기값 생성
+	private void setDefaultDate(LocalDate date) {
+		int currentYear = date.getYear();
+		int currentMonth = date.getMonthValue();
+		int currentDay = date.getDayOfMonth();
+		
+		for (int year = currentYear -10; year <= currentYear + 10; year++) {
+			yearBox.addItem(year);
+		}
+		yearBox.setSelectedItem(currentYear);
+		
+		for (int month =1; month<=12; month++) {
+			monthBox.addItem(String.valueOf(month));
+		}
+		monthBox.setSelectedItem(String.valueOf(currentMonth));
+		
+		int daysInMonth = date.lengthOfMonth();
+		for (int day =1; day<=daysInMonth; day++) {
+			dayBox.addItem(day);
+		}
+		dayBox.setSelectedItem(currentDay);
+	}
 }
