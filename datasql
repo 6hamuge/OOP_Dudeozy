@@ -13,7 +13,7 @@ CREATE TABLE Schedule (
     time VARCHAR2(10),          -- 시간
     task VARCHAR2(255),         -- 할 일
     importance NUMBER(1),       -- 중요도 (1-5 등의 범위로 설정)
-    completed VARCHAR2(10)      -- 완료 여부 ('완료', '미완료' 등)
+    completed NUMBER(1)      -- 완료 여부 ('완료', '미완료' 등)
 );
 
 CREATE TABLE UserSettingtask (
