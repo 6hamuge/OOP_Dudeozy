@@ -80,11 +80,12 @@ public class Obje extends JInternalFrame {
 
     private void loadDataFromDatabase() {
         String url = "jdbc:oracle:thin:@localhost:1521:xe";
-        String username = "your_username"; // 사용자 이름 입력
-        String password = "your_password"; // 비밀번호 입력
+        String username = "system"; // 사용자 이름 입력
+        String password = "password123"; // 비밀번호 입력
 
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             PreparedStatement ps = conn.prepareStatement("SELECT subject, completed, task, TO_CHAR(TO_DATE(year || '-' || LPAD(month, 2, '0') || '-' || LPAD(day, 2, '0'), 'YYYY-MM-DD'), 'YYYY.MM.DD') AS date FROM Schedule")) {
+        try (Connection conn = DriverManager.getConnection(url, username, password)) {
+            String query = "SELECT subject, completed, task, TO_CHAR(TO_DATE(CONCAT(year, '-', LPAD(month, 2, '0'), '-', LPAD(day, 2, '0')), 'YYYY-MM-DD'), 'YYYY.MM.DD') AS date FROM Schedule";
+            PreparedStatement ps = conn.prepareStatement(query);
 
             ResultSet rs = ps.executeQuery();
 
@@ -117,8 +118,8 @@ public class Obje extends JInternalFrame {
 
     private void updateCompletionStatus(String subject, String task, boolean completed) {
         String url = "jdbc:oracle:thin:@localhost:1521:xe";
-        String username = "your_username"; // 사용자 이름 입력
-        String password = "your_password"; // 비밀번호 입력
+        String username = "admin"; // 사용자 이름 입력
+        String password = "password123"; // 비밀번호 입력
 
         try (Connection conn = DriverManager.getConnection(url, username, password);
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE subject = ? AND task = ?")) {
