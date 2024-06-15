@@ -12,19 +12,19 @@ CREATE TABLE Schedule (
     day NUMBER(2),              -- 일
     time VARCHAR2(10),          -- 시간
     task VARCHAR2(255),         -- 할 일
-    importance NUMBER(1),       -- 중요도 (1-5 등의 범위로 설정)
+    importance NUMBER(6),       -- 중요도 (1-5 등의 범위로 설정)
     completed NUMBER(1)      -- 완료 여부 ('완료', '미완료' 등)
 );
 
 CREATE TABLE UserSettingtask (
     task_name VARCHAR2(100),        -- 할 일 이름
-    alert_time NUMBER(8),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
+    alert_time NUMBER(8),           -- 알림 시간 (체크박스 0~6까지)
     color VARCHAR2(7)               -- 색깔 (HEX 코드 형식으로 저장, 예: '#FFFFFF')
 );
 
 CREATE TABLE UserSettingevent (
     event_name VARCHAR2(100),       -- 이벤트 이름
-    alert_time NUMBER(8),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
+    alert_time NUMBER(8),           -- 알림 시간 (체크박스 0~6까지)
     color VARCHAR2(7)               -- 색깔 (HEX 코드 형식으로 저장, 예: '#FFFFFF')
 );
 
