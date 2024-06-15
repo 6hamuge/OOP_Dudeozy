@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Stactics {
-    JFrame jf;
+    //JFrame jf;
+	JInternalFrame jf;
     JTabbedPane tabpane;
     Connection conn;
 
@@ -28,7 +29,8 @@ public class Stactics {
             return;
         }
 
-        jf = new JFrame();
+        //jf = new JFrame();
+        jf = new JInternalFrame();
         tabpane = new JTabbedPane();
 
         JPanel one = new JPanel(new GridLayout(0, 1, 10, 10));
@@ -47,19 +49,23 @@ public class Stactics {
         // 일별 진행상황 게이지
         JLabel label1 = new JLabel("일별 진행상황");
         one.add(label1);
-        
-        JProgressBar overallProgressBar = new JProgressBar();
-        overallProgressBar.setValue(calculateOverallProgress(progressDataList));
-        overallProgressBar.setString("일별 진행상황");
-        overallProgressBar.setStringPainted(true);
-        one.add(overallProgressBar);
-        
+
+        // 오늘 날짜 계산
         LocalDate today = LocalDate.now();
+
+        // 오늘 날짜의 데이터 필터링
         List<ProgressData> todayData = progressDataList.stream()
                 .filter(d -> d.year == today.getYear() && d.month == today.getMonthValue() && d.day == today.getDayOfMonth())
                 .collect(Collectors.toList());
 
-        // 과목별 진행 상황 합산
+        // 전체 진행 상황 게이지 추가
+        JProgressBar overallProgressBar = new JProgressBar();
+        overallProgressBar.setValue(calculateOverallProgress(progressDataList));
+        overallProgressBar.setString("전체 진행상황: " + overallProgressBar.getValue() + "%");
+        overallProgressBar.setStringPainted(true);
+        one.add(overallProgressBar);
+
+        // 과목별 진행 상황 합산 및 게이지 추가
         Map<String, List<ProgressData>> todaySubjectDataMap = todayData.stream()
                 .collect(Collectors.groupingBy(d -> d.subject));
 
@@ -338,4 +344,8 @@ public class Stactics {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Stactics());
     }
+    public JInternalFrame getInternalFrame() {
+    	return jf;
+    }
+
 }
