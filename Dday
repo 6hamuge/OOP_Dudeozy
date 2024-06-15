@@ -1,74 +1,98 @@
-import javax.swing.*; // GUI 컴포넌트를 위해 javax.swing 패키지의 모든 클래스를 임포트
-import java.awt.*; // AWT 컴포넌트를 위해 java.awt 패키지의 모든 클래스를 임포트
-import java.sql.Connection; // SQL 연결을 위한 Connection 클래스 임포트
-import java.sql.DriverManager; // SQL 연결 관리를 위한 DriverManager 클래스 임포트
-import java.sql.PreparedStatement; // SQL 문을 위한 PreparedStatement 클래스 임포트
-import java.sql.ResultSet; // SQL 쿼리 결과를 담기 위한 ResultSet 클래스 임포트
-import java.time.LocalDate; // 날짜 작업을 위한 LocalDate 클래스 임포트
-import java.time.temporal.ChronoUnit; // 날짜 차이를 계산하기 위한 ChronoUnit 클래스 임포트
-import javax.swing.plaf.FontUIResource; // 커스텀 폰트 설정을 위한 FontUIResource 클래스 임포트
+import javax.swing.*; 
+import java.awt.*; 
+import java.sql.Connection; 
+import java.sql.DriverManager; 
+import java.sql.PreparedStatement; 
+import java.sql.ResultSet; 
+import java.time.LocalDate; 
+import java.time.temporal.ChronoUnit; 
+import java.util.ArrayList; 
+import java.util.Collections; 
+import java.util.Comparator;
+import java.util.HashMap; 
+import java.util.List; 
+import java.util.Map; 
+import javax.swing.plaf.FontUIResource;
 
-public class DDay { ///// 폰트 설정
-   JInternalFrame frame;
-    ///////// 틀 만들기 /////////////
+public class DDay {
+    JInternalFrame frame;
+
     public DDay() {
-        // 커스텀 폰트 설정
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
-        Dimension dim = new Dimension(1920, 1080); // 창 크기 설정
-        frame = new JInternalFrame("D-day"); // "D-day" 제목의 새로운 JFrame 생성
-        frame.setLocation(100, 100); // 창의 초기 위치 설정
-        frame.setPreferredSize(dim); // 창의 선호 크기 설정
+        Dimension dim = new Dimension(1920, 1080); 
+        frame = new JInternalFrame("D-day"); 
+        frame.setLocation(100, 100); 
+        frame.setPreferredSize(dim);
 
-        JPanel panel = new JPanel(); // 새로운 JPanel 생성
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS)); // 패널의 레이아웃 설정
+        JPanel panel = new JPanel(); 
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        loadDataFromDatabase(panel); // 데이터베이스에서 데이터를 로드하고 패널에 추가
+        loadDataFromDatabase(panel); 
 
-        JScrollPane scrollPane = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // 세로 스크롤바가 항상 보이도록 스크롤 패널 추가
-        frame.add(scrollPane); // 스크롤 패널을 프레임에 추가
+        JScrollPane scrollPane = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        frame.add(scrollPane);
 
-        frame.pack(); // 모든 컴포넌트의 크기에 맞춰 창 크기 조정
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 창 닫을 때 프로그램 종료 설정
-        frame.setVisible(true); // 창을 보이도록 설정
+        frame.pack(); 
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+        frame.setVisible(true); 
     }
 
-    //// 데이터베이스에서 데이터 로드 ///////////////
     private static void loadDataFromDatabase(JPanel panel) {
+        Map<String, List<ScheduleItem>> scheduleMap = new HashMap<>();
+
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
-             PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, task, completed FROM Schedule")) {
-            
-            ResultSet rs = ps.executeQuery(); // 쿼리 실행 및 결과 가져오기
+             PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, task, importance, completed FROM Schedule")) {
+
+            ResultSet rs = ps.executeQuery(); 
 
             while (rs.next()) {
-                String subject = rs.getString("subject"); // subject 컬럼 값 가져오기
-                int year = rs.getInt("year"); // year 컬럼 값 가져오기
-                int month = rs.getInt("month"); // month 컬럼 값 가져오기
-                int day = rs.getInt("day"); // day 컬럼 값 가져오기
-                String task = rs.getString("task"); // task 컬럼 값 가져오기
-                boolean completed = rs.getString("completed").equals("완료"); // completed 컬럼 값 가져오기
+                String subject = rs.getString("subject"); 
+                int year = rs.getInt("year"); 
+                int month = rs.getInt("month"); 
+                int day = rs.getInt("day"); 
+                String task = rs.getString("task"); 
+                int importance = rs.getInt("importance");
+                boolean completed = rs.getInt("completed") == 1; 
 
-                JPanel dDayPanel = new JPanel(); // 새로운 패널 생성
-                dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS)); // 패널의 레이아웃 설정
+                LocalDate targetDate = LocalDate.of(year, month, day);
+                long dDay = calculateDaysUntil(targetDate);
 
-                JCheckBox taskCheckBox = new JCheckBox(task); // 새로운 체크박스 생성
-                taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18)); // 체크박스 폰트 설정
-                taskCheckBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, taskCheckBox.getPreferredSize().height)); // 체크박스 최대 크기 설정
-                taskCheckBox.setSelected(completed); // 완료 여부에 따라 체크박스 선택 상태 설정
-                toggleStrikeThrough(taskCheckBox, completed); // 완료 여부에 따라 체크박스 텍스트에 취소선 추가
-                taskCheckBox.addActionListener(e -> toggleStrikeThrough(taskCheckBox)); // 체크박스 클릭 시 취소선 토글
-
-                dDayPanel.add(taskCheckBox); // 체크박스를 패널에 추가
-
-                long dDay = calculateDaysUntil(year, month, day);
+                ScheduleItem item = new ScheduleItem(subject, targetDate, task, importance, completed);
                 String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
-                dDayPanel.setBorder(BorderFactory.createTitledBorder(subject + " " + dDayText + " / " + month + "." + day));
-                panel.add(dDayPanel); // D-day 패널을 메인 패널에 추가
+
+                scheduleMap.computeIfAbsent(dDayText, k -> new ArrayList<>()).add(item);
             }
+
+            List<Map.Entry<String, List<ScheduleItem>>> entryList = new ArrayList<>(scheduleMap.entrySet());
+            Collections.sort(entryList, Comparator.comparingLong(e -> parseDDay(e.getKey())));
+
+            for (Map.Entry<String, List<ScheduleItem>> entry : entryList) {
+                List<ScheduleItem> itemList = entry.getValue();
+                itemList.sort(Comparator.comparingInt(ScheduleItem::getImportance).reversed());
+
+                for (ScheduleItem item : itemList) {
+                    JPanel dDayPanel = new JPanel(); 
+                    dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS));
+
+                    JCheckBox taskCheckBox = new JCheckBox(item.getTask()); 
+                    taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18)); 
+                    taskCheckBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, taskCheckBox.getPreferredSize().height));
+                    taskCheckBox.setSelected(item.isCompleted());
+                    toggleStrikeThrough(taskCheckBox, item.isCompleted());
+                    taskCheckBox.addActionListener(e -> toggleStrikeThrough(taskCheckBox));
+
+                    dDayPanel.add(taskCheckBox);
+
+                    dDayPanel.setBorder(BorderFactory.createTitledBorder(item.getSubject() + " " + entry.getKey() + " / " + item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth()));
+                    panel.add(dDayPanel);
+                }
+            }
+
         } catch (Exception e) {
-            e.printStackTrace(); // 예외 발생 시 스택 트레이스 출력
+            e.printStackTrace(); 
         }
     }
-    
+
     public static void setUIFont(FontUIResource f) {
         java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
         while (keys.hasMoreElements()) {
@@ -79,35 +103,37 @@ public class DDay { ///// 폰트 설정
             }
         }
     }
-    
-    ///////////// D-day 계산하기 ////////////
-    private static long calculateDaysUntil(int year, int month, int day) {
-        LocalDate targetDate = LocalDate.of(year, month, day); // 목표 날짜 생성
-        LocalDate currentDate = LocalDate.now(); // 현재 날짜 가져오기
-        return ChronoUnit.DAYS.between(currentDate, targetDate); // 현재 날짜와 목표 날짜 사이의 일수 계산
-    }
-    
-    //////////////////////// 취소선 긋기 //////////
-    private static void toggleStrikeThrough(JCheckBox checkBox) {
-    	checkBox.addActionListener(e -> {
-            boolean completed = checkBox.isSelected();
-            String task = checkBox.getText(); // 체크박스의 텍스트는 task 이름으로 가정합니다.
 
-            // 데이터베이스 업데이트 메서드 호출
+    private static long calculateDaysUntil(LocalDate targetDate) {
+        LocalDate currentDate = LocalDate.now(); 
+        return ChronoUnit.DAYS.between(currentDate, targetDate); 
+    }
+
+    private static long parseDDay(String dDayText) {
+        if (dDayText.equals("D-day")) return 0;
+        return Long.parseLong(dDayText.substring(2));
+    }
+
+    private static void toggleStrikeThrough(JCheckBox checkBox) {
+        checkBox.addActionListener(e -> {
+            boolean completed = checkBox.isSelected();
+            String task = checkBox.getText();
+
             updateDatabase(task, completed);
         });
+
         if (checkBox.isSelected()) {
-            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>"); // 체크박스가 선택되었으면 취소선 추가
+            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>");
         } else {
-            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", "")); // 선택 해제 시 취소선 제거
+            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
 
     private static void toggleStrikeThrough(JCheckBox checkBox, boolean isCompleted) {
         if (isCompleted) {
-            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>"); // 완료 상태이면 취소선 추가
+            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>");
         } else {
-            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", "")); // 완료 상태가 아니면 취소선 제거
+            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
 
@@ -115,17 +141,56 @@ public class DDay { ///// 폰트 설정
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE task = ?")) {
 
-            ps.setString(1, completed ? "1" : "0"); // 완료 여부에 따라 "완료" 또는 "미완료" 설정
-            ps.setString(2, task); // 업데이트할 task 설정
-            ps.executeUpdate(); // 업데이트 실행
+            ps.setInt(1, completed ? 1 : 0); 
+            ps.setString(2, task); 
+            ps.executeUpdate(); 
 
         } catch (Exception e) {
-            e.printStackTrace(); // 예외 발생 시 스택 트레이스 출력
+            e.printStackTrace(); 
         }
     }
-    
-    public JInternalFrame getInternalFrame() {
-       return frame;
-   }
 
+    private static class ScheduleItem {
+        private final String subject;
+        private final LocalDate date;
+        private final String task;
+        private final int importance;
+        private final boolean completed;
+
+        public ScheduleItem(String subject, LocalDate date, String task, int importance, boolean completed) {
+            this.subject = subject;
+            this.date = date;
+            this.task = task;
+            this.importance = importance;
+            this.completed = completed;
+        }
+
+        public String getSubject() {
+            return subject;
+        }
+
+        public LocalDate getDate() {
+            return date;
+        }
+
+        public String getTask() {
+            return task;
+        }
+
+        public int getImportance() {
+            return importance;
+        }
+
+        public boolean isCompleted() {
+            return completed;
+        }
+    }
+
+    public JInternalFrame getInternalFrame() {
+        return frame;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(DDay::new);
+    }
 }
