@@ -18,13 +18,13 @@ CREATE TABLE Schedule (
 
 CREATE TABLE UserSettingtask (
     task_name VARCHAR2(100),        -- 할 일 이름
-    alert_time NUMBER(1),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
+    alert_time NUMBER(8),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
     color VARCHAR2(7)               -- 색깔 (HEX 코드 형식으로 저장, 예: '#FFFFFF')
 );
 
 CREATE TABLE UserSettingevent (
     event_name VARCHAR2(100),       -- 이벤트 이름
-    alert_time NUMBER(1),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
+    alert_time NUMBER(8),           -- 알림 시간 (체크박스, 1: 체크됨, 0: 체크되지 않음)
     color VARCHAR2(7)               -- 색깔 (HEX 코드 형식으로 저장, 예: '#FFFFFF')
 );
 
