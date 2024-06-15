@@ -8,24 +8,14 @@ import java.time.LocalDate; // 날짜 작업을 위한 LocalDate 클래스 임�
 import java.time.temporal.ChronoUnit; // 날짜 차이를 계산하기 위한 ChronoUnit 클래스 임포트
 import javax.swing.plaf.FontUIResource; // 커스텀 폰트 설정을 위한 FontUIResource 클래스 임포트
 
-public class Dda { ///// 폰트 설정
-    public static void setUIFont(FontUIResource f) {
-        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
-        while (keys.hasMoreElements()) {
-            Object key = keys.nextElement();
-            Object value = UIManager.get(key);
-            if (value instanceof FontUIResource) {
-                UIManager.put(key, f);
-            }
-        }
-    }
-
+public class DDay { ///// 폰트 설정
+   JInternalFrame frame;
     ///////// 틀 만들기 /////////////
-    public static void main(String[] args) {
+    public DDay() {
         // 커스텀 폰트 설정
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
         Dimension dim = new Dimension(1920, 1080); // 창 크기 설정
-        JFrame frame = new JFrame("D-day"); // "D-day" 제목의 새로운 JFrame 생성
+        frame = new JInternalFrame("D-day"); // "D-day" 제목의 새로운 JFrame 생성
         frame.setLocation(100, 100); // 창의 초기 위치 설정
         frame.setPreferredSize(dim); // 창의 선호 크기 설정
 
@@ -44,7 +34,7 @@ public class Dda { ///// 폰트 설정
 
     //// 데이터베이스에서 데이터 로드 ///////////////
     private static void loadDataFromDatabase(JPanel panel) {
-        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, task, completed FROM Schedule")) {
             
             ResultSet rs = ps.executeQuery(); // 쿼리 실행 및 결과 가져오기
@@ -69,12 +59,24 @@ public class Dda { ///// 폰트 설정
 
                 dDayPanel.add(taskCheckBox); // 체크박스를 패널에 추가
 
-                long dDay = calculateDaysUntil(year, month, day); // D-day 계산
-                dDayPanel.setBorder(BorderFactory.createTitledBorder(subject + " D-" + dDay + " / " + month + "." + day)); // 제목 테두리 설정
+                long dDay = calculateDaysUntil(year, month, day);
+                String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
+                dDayPanel.setBorder(BorderFactory.createTitledBorder(subject + " " + dDayText + " / " + month + "." + day));
                 panel.add(dDayPanel); // D-day 패널을 메인 패널에 추가
             }
         } catch (Exception e) {
             e.printStackTrace(); // 예외 발생 시 스택 트레이스 출력
+        }
+    }
+    
+    public static void setUIFont(FontUIResource f) {
+        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof FontUIResource) {
+                UIManager.put(key, f);
+            }
         }
     }
     
@@ -87,6 +89,13 @@ public class Dda { ///// 폰트 설정
     
     //////////////////////// 취소선 긋기 //////////
     private static void toggleStrikeThrough(JCheckBox checkBox) {
+    	checkBox.addActionListener(e -> {
+            boolean completed = checkBox.isSelected();
+            String task = checkBox.getText(); // 체크박스의 텍스트는 task 이름으로 가정합니다.
+
+            // 데이터베이스 업데이트 메서드 호출
+            updateDatabase(task, completed);
+        });
         if (checkBox.isSelected()) {
             checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>"); // 체크박스가 선택되었으면 취소선 추가
         } else {
@@ -103,10 +112,10 @@ public class Dda { ///// 폰트 설정
     }
 
     private static void updateDatabase(String task, boolean completed) {
-        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE task = ?")) {
 
-            ps.setString(1, completed ? "완료" : "미완료"); // 완료 여부에 따라 "완료" 또는 "미완료" 설정
+            ps.setString(1, completed ? "1" : "0"); // 완료 여부에 따라 "완료" 또는 "미완료" 설정
             ps.setString(2, task); // 업데이트할 task 설정
             ps.executeUpdate(); // 업데이트 실행
 
@@ -114,5 +123,9 @@ public class Dda { ///// 폰트 설정
             e.printStackTrace(); // 예외 발생 시 스택 트레이스 출력
         }
     }
+    
+    public JInternalFrame getInternalFrame() {
+       return frame;
+   }
 
 }
