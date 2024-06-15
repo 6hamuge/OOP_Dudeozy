@@ -2,6 +2,7 @@ package doduzy;
 
 import java.awt.*;
 import javax.swing.*;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.DayOfWeek;
@@ -11,8 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Stactics {
-    //JFrame jf;
-	JInternalFrame jf;
+    JFrame jf;
     JTabbedPane tabpane;
     Connection conn;
 
@@ -28,11 +28,10 @@ public class Stactics {
             return;
         }
 
-        //jf = new JFrame();
-        jf = new JInternalFrame();
+        jf = new JFrame();
         tabpane = new JTabbedPane();
 
-        JPanel one = new JPanel(new GridLayout(5, 1, 10, 10));
+        JPanel one = new JPanel(new GridLayout(0, 1, 10, 10));
         JPanel two = new JPanel(new BorderLayout());
         JPanel three = new JPanel(new BorderLayout());
         JPanel four = new JPanel(new BorderLayout());
@@ -45,29 +44,33 @@ public class Stactics {
         // 데이터베이스에서 데이터를 가져와 진행상황을 설정
         List<ProgressData> progressDataList = fetchProgressData();
 
-        // 과목별 진행 상황 합산
-        Map<String, Integer> subjectProgressMap = progressDataList.stream()
-                .collect(Collectors.groupingBy(d -> d.subject, Collectors.summingInt(d -> d.progress)));
-
         // 일별 진행상황 게이지
         JLabel label1 = new JLabel("일별 진행상황");
         one.add(label1);
-
+        
         JProgressBar overallProgressBar = new JProgressBar();
         overallProgressBar.setValue(calculateOverallProgress(progressDataList));
         overallProgressBar.setString("일별 진행상황");
         overallProgressBar.setStringPainted(true);
         one.add(overallProgressBar);
-
+        
         LocalDate today = LocalDate.now();
         List<ProgressData> todayData = progressDataList.stream()
                 .filter(d -> d.year == today.getYear() && d.month == today.getMonthValue() && d.day == today.getDayOfMonth())
                 .collect(Collectors.toList());
 
-        for (ProgressData d : todayData) {
+        // 과목별 진행 상황 합산
+        Map<String, List<ProgressData>> todaySubjectDataMap = todayData.stream()
+                .collect(Collectors.groupingBy(d -> d.subject));
+
+        for (Map.Entry<String, List<ProgressData>> entry : todaySubjectDataMap.entrySet()) {
+            String subject = entry.getKey();
+            List<ProgressData> subjectData = entry.getValue();
+            int subjectProgress = (int) (subjectData.stream().mapToInt(d -> d.progress).average().orElse(0));
+
             JProgressBar progressBar = new JProgressBar();
-            progressBar.setValue(d.progress);
-            progressBar.setString(d.subject + " 진행상황");
+            progressBar.setValue(subjectProgress);
+            progressBar.setString(subject + " 진행상황: " + subjectProgress + "%");
             progressBar.setStringPainted(true);
             one.add(progressBar);
         }
@@ -136,8 +139,8 @@ public class Stactics {
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         return dayOfWeek.toString().substring(0, 3).toUpperCase();
     }
-
-    // 전체 진행 상황을 계산하는 메소드
+    
+ // 전체 진행 상황을 계산하는 메소드
     private int calculateOverallProgress(List<ProgressData> data) {
         int totalProgress = 0;
         for (ProgressData d : data) {
@@ -335,8 +338,4 @@ public class Stactics {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Stactics());
     }
-    public JInternalFrame getInternalFrame() {
-    	return jf;
-    }
 }
-
