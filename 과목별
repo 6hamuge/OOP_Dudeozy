@@ -1,0 +1,165 @@
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Font;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.plaf.FontUIResource;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Obje extends JInternalFrame {
+    
+    public static void setUIFont(FontUIResource f) {
+        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof FontUIResource) {
+                UIManager.put(key, f);
+            }
+        }
+    }
+
+    JTabbedPane t = new JTabbedPane();
+    Map<String, JTable> tables = new HashMap<>();
+    Map<String, DefaultTableModel> models = new HashMap<>();
+
+    public Obje() {
+        setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 16)));
+        super.setTitle("할일");
+
+        Object[] columnNames = {"완료", "할일", "날짜"};
+
+        loadDataFromDatabase();
+
+        for (String subject : models.keySet()) {
+            JTable table = new JTable(models.get(subject));
+            tables.put(subject, table);
+            
+            // 체크박스 렌더러와 에디터 설정
+            table.getColumnModel().getColumn(0).setCellRenderer(new CheckBoxRenderer());
+            table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JCheckBox()));
+
+            // 텍스트 셀 렌더러 설정
+            for (int i = 1; i < table.getColumnCount(); i++) {
+                table.getColumnModel().getColumn(i).setCellRenderer(new StrikethroughRenderer());
+            }
+
+            models.get(subject).addTableModelListener(new TableModelListener() {
+                @Override
+                public void tableChanged(TableModelEvent e) {
+                    if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 0) {
+                        int row = e.getFirstRow();
+                        boolean isChecked = (Boolean) models.get(subject).getValueAt(row, 0);
+                        String task = (String) models.get(subject).getValueAt(row, 1);
+                        updateCompletionStatus(subject, task, isChecked);
+                    }
+                }
+            });
+
+            JScrollPane scrollPane = new JScrollPane(table);
+            t.add(subject, scrollPane);
+        }
+
+        setLayout(new BorderLayout());
+        add(t, BorderLayout.CENTER); 
+
+        setSize(1920, 1080);
+        setLocation(null);
+        setVisible(true);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    private void loadDataFromDatabase() {
+        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+             PreparedStatement ps = conn.prepareStatement("SELECT subject, completed, task, TO_CHAR(year || '.' || LPAD(month, 2, '0') || '.' || LPAD(day, 2, '0')) AS date FROM Schedule")) {
+            
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                String subject = rs.getString("subject");
+                boolean completed = rs.getString("completed").equals("완료");
+                String task = rs.getString("task");
+                String date = rs.getString("date");
+
+                if (!models.containsKey(subject)) {
+                    Object[] columnNames = {"완료", "할일", "날짜"};
+                    DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+                        @Override
+                        public Class<?> getColumnClass(int columnIndex) {
+                            if (columnIndex == 0) {
+                                return Boolean.class;
+                            }
+                            return String.class;
+                        }
+                    };
+                    models.put(subject, model);
+                }
+
+                models.get(subject).addRow(new Object[] { completed, task, date });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void updateCompletionStatus(String subject, String task, boolean completed) {
+        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+             PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE subject = ? AND task = ?")) {
+            
+            ps.setString(1, completed ? "완료" : "미완료");
+            ps.setString(2, subject);
+            ps.setString(3, task);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new Obje());
+    }
+}
+
+//////////////////////////여기에서 부터는 수정하지마!! 이주영 정신차려/////////////////////////// 취소선 긋기
+
+class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
+    public CheckBoxRenderer() {
+        setHorizontalAlignment(JLabel.CENTER);
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        if (isSelected) {
+            setBackground(table.getSelectionBackground());
+            setForeground(table.getSelectionForeground());
+        } else {
+            setBackground(table.getBackground());
+            setForeground(table.getForeground());
+        }
+        setSelected((value != null && (Boolean) value));
+        return this;
+    }
+}
+
+class StrikethroughRenderer extends DefaultTableCellRenderer {
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        boolean isCompleted = (Boolean) table.getValueAt(row, 0);
+        if (isCompleted) {
+            value = "<html><strike>" + value + "</strike></html>";
+        } else {
+            value = "<html>" + value + "</html>";
+        }
+        return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+    }
+}
