@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Obje extends JInternalFrame {
-    
+
     public static void setUIFont(FontUIResource f) {
         java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
         while (keys.hasMoreElements()) {
@@ -44,7 +44,7 @@ public class Obje extends JInternalFrame {
         for (String subject : models.keySet()) {
             JTable table = new JTable(models.get(subject));
             tables.put(subject, table);
-            
+
             // 체크박스 렌더러와 에디터 설정
             table.getColumnModel().getColumn(0).setCellRenderer(new CheckBoxRenderer());
             table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JCheckBox()));
@@ -71,20 +71,24 @@ public class Obje extends JInternalFrame {
         }
 
         setLayout(new BorderLayout());
-        add(t, BorderLayout.CENTER); 
+        add(t, BorderLayout.CENTER);
 
         setSize(1920, 1080);
-        setLocation(null);
+        setLocation(100, 100);
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     private void loadDataFromDatabase() {
-        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+        String url = "jdbc:oracle:thin:@localhost:1521:xe";
+        String username = "your_username"; // 사용자 이름 입력
+        String password = "your_password"; // 비밀번호 입력
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
              PreparedStatement ps = conn.prepareStatement("SELECT subject, completed, task, TO_CHAR(year || '.' || LPAD(month, 2, '0') || '.' || LPAD(day, 2, '0')) AS date FROM Schedule")) {
-            
+
             ResultSet rs = ps.executeQuery();
-            
+
             while (rs.next()) {
                 String subject = rs.getString("subject");
                 boolean completed = rs.getString("completed").equals("완료");
@@ -105,7 +109,7 @@ public class Obje extends JInternalFrame {
                     models.put(subject, model);
                 }
 
-                models.get(subject).addRow(new Object[] { completed, task, date });
+                models.get(subject).addRow(new Object[]{completed, task, date});
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -113,9 +117,13 @@ public class Obje extends JInternalFrame {
     }
 
     private void updateCompletionStatus(String subject, String task, boolean completed) {
-        try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "username", "password");
+        String url = "jdbc:oracle:thin:@localhost:1521:xe";
+        String username = "your_username"; // 사용자 이름 입력
+        String password = "your_password"; // 비밀번호 입력
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE subject = ? AND task = ?")) {
-            
+
             ps.setString(1, completed ? "완료" : "미완료");
             ps.setString(2, subject);
             ps.setString(3, task);
@@ -129,8 +137,6 @@ public class Obje extends JInternalFrame {
         SwingUtilities.invokeLater(() -> new Obje());
     }
 }
-
-//////////////////////////여기에서 부터는 수정하지마!! 이주영 정신차려/////////////////////////// 취소선 긋기
 
 class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
     public CheckBoxRenderer() {
