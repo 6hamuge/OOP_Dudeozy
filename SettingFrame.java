@@ -1,5 +1,4 @@
-package TeamProject;
-
+package dudeozy;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -19,23 +18,19 @@ import javax.swing.tree.TreePath;
 public class SettingFrame {
     private static final String JDBC_DRIVERCLASSNAME = "oracle.jdbc.driver.OracleDriver";
     private static final String JDBC_URL = "jdbc:oracle:thin:@localhost:1521:XE";
-    private static final String JDBC_USER = "system";
-    private static final String JDBC_PASSWORD = "databaseoracle";
+    private static final String JDBC_USER = "SYSTEM";
+    private static final String JDBC_PASSWORD = "foroopcurie";
 
     private static JComboBox<String> subjectComboBox = new JComboBox<>();
     private static JComboBox<String> eventComboBox = new JComboBox<>();
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            createAndShowGUI();
-        });
-    }
-
-    private static void createAndShowGUI() {
-        JFrame f = new JFrame("사용자 설정");
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    JInternalFrame f;
+    
+    public SettingFrame() {
+        f = new JInternalFrame("사용자 설정");
+        //f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(500, 600);
-        f.setLocationRelativeTo(null);
+        //f.setLocationRelativeTo(null);
 
         JPanel p1 = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -274,7 +269,7 @@ public class SettingFrame {
 
     private static void saveSubject(String subjectName) {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGTASKS (TASK_NAME) VALUES (?)")) {
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGTASK (TASK_NAME) VALUES (?)")) {
             pstmt.setString(1, subjectName);
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -284,7 +279,7 @@ public class SettingFrame {
 
     private static void saveEvent(String eventName) {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENTS (EVENT_NAME) VALUES (?)")) {
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENT (EVENT_NAME) VALUES (?)")) {
             pstmt.setString(1, eventName);
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -299,7 +294,7 @@ public class SettingFrame {
             timeString.append(time);
         }
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASKS SET ALERT_TIME = ? WHERE TASK_NAME = ?")) {
+             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASK SET ALERT_TIME = ? WHERE TASK_NAME = ?")) {
             pstmt.setString(1, timeString.toString());
             pstmt.setString(2, selectedSubject);
             pstmt.executeUpdate();
@@ -307,7 +302,7 @@ public class SettingFrame {
             e.printStackTrace();
         }
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGEVENTS SET ALERT_TIME = ? WHERE EVENT_NAME = ?")) {
+             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGEVENT SET ALERT_TIME = ? WHERE EVENT_NAME = ?")) {
             pstmt.setString(1, timeString.toString());
             pstmt.setString(2, selectedEvent);
             pstmt.executeUpdate();
@@ -319,7 +314,7 @@ public class SettingFrame {
     private static void saveSubjectColor(String selectedSubject, Color newcolor) {
         String colorString = String.format("#%02x%02x%02x", newcolor.getRed(), newcolor.getGreen(), newcolor.getBlue());
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASKS SET COLOR = ? WHERE TASK_NAME = ?")) {
+             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASK SET COLOR = ? WHERE TASK_NAME = ?")) {
             pstmt.setString(1, colorString);
             pstmt.setString(2, selectedSubject);
             pstmt.executeUpdate();
@@ -336,14 +331,14 @@ public class SettingFrame {
              Statement stmt = conn.createStatement()) {
 
             // 과목 불러오기
-            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASKS")) {
+            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASK")) {
                 while (rsSubjects.next()) {
                     subjectComboBox.addItem(rsSubjects.getString("TASK_NAME"));
                 }
             }
 
             // 이벤트 불러오기
-            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENTS")) {
+            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENT")) {
                 while (rsEvents.next()) {
                     eventComboBox.addItem(rsEvents.getString("EVENT_NAME"));
                 }
@@ -368,7 +363,7 @@ public class SettingFrame {
              Statement stmt = conn.createStatement()) {
 
             // 과목 불러오기
-            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASKS")) {
+            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASK")) {
                 while (rsSubjects.next()) {
                     String subjectName = rsSubjects.getString("TASK_NAME");
                     subjectRoot.add(new DefaultMutableTreeNode(subjectName));
@@ -376,7 +371,7 @@ public class SettingFrame {
             }
 
             // 이벤트 불러오기
-            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENTS")) {
+            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENT")) {
                 while (rsEvents.next()) {
                     String eventName = rsEvents.getString("EVENT_NAME");
                     eventRoot.add(new DefaultMutableTreeNode(eventName));
@@ -448,5 +443,7 @@ public class SettingFrame {
             return COPY_OR_MOVE;
         }
     }
+    public JInternalFrame getInternalFrame() {
+	    return f;
+	}
 }
-
