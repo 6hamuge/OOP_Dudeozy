@@ -85,7 +85,7 @@ public class Stactics {
         JLabel label21 = new JLabel("주별 진행상황");
         two.add(label21, BorderLayout.NORTH);
 
-        JSplitPane splitPane1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new WeekBarChartPanel(progressDataList), new PieChartPanel(progressDataList));
+        JSplitPane splitPane1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new WeekBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "week"));
         splitPane1.setResizeWeight(0.5); // Adjust the split ratio
         two.add(splitPane1, BorderLayout.CENTER);
 
@@ -93,7 +93,7 @@ public class Stactics {
         JLabel label31 = new JLabel("월별 진행상황");
         three.add(label31, BorderLayout.NORTH);
 
-        JSplitPane splitPane2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new MonthBarChartPanel(progressDataList), new PieChartPanel(progressDataList));
+        JSplitPane splitPane2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new MonthBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "month"));
         splitPane2.setResizeWeight(0.5); // Adjust the split ratio
         three.add(splitPane2, BorderLayout.CENTER);
 
@@ -101,7 +101,7 @@ public class Stactics {
         JLabel label41 = new JLabel("연별 진행상황");
         four.add(label41, BorderLayout.NORTH);
 
-        JSplitPane splitPane3 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new YearBarChartPanel(progressDataList), new PieChartPanel(progressDataList));
+        JSplitPane splitPane3 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new YearBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "year"));
         splitPane3.setResizeWeight(0.5); // Adjust the split ratio
         four.add(splitPane3, BorderLayout.CENTER);
 
@@ -146,7 +146,7 @@ public class Stactics {
         return dayOfWeek.toString().substring(0, 3).toUpperCase();
     }
     
- // 전체 진행 상황을 계산하는 메소드
+    // 전체 진행 상황을 계산하는 메소드
     private int calculateOverallProgress(List<ProgressData> data) {
         int totalProgress = 0;
         for (ProgressData d : data) {
@@ -179,8 +179,17 @@ public class Stactics {
         Map<String, Integer> weekData;
 
         WeekBarChartPanel(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            WeekFields weekFields = WeekFields.of(Locale.getDefault());
+            int currentWeek = now.get(weekFields.weekOfYear());
+            int currentYear = now.getYear();
+
             this.weekData = data.stream()
                                 .filter(d -> d.progress == 100)
+                                .filter(d -> {
+                                    LocalDate date = LocalDate.of(d.year, d.month, d.day);
+                                    return date.get(weekFields.weekOfYear()) == currentWeek && d.year == currentYear;
+                                })
                                 .collect(Collectors.groupingBy(d -> d.weekday, Collectors.summingInt(d -> 1)));
         }
 
@@ -215,9 +224,14 @@ public class Stactics {
         Map<String, Integer> monthData;
 
         MonthBarChartPanel(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            int currentMonth = now.getMonthValue();
+            int currentYear = now.getYear();
             WeekFields weekFields = WeekFields.of(Locale.getDefault());
+
             this.monthData = data.stream()
                                  .filter(d -> d.progress == 100)
+                                 .filter(d -> d.year == currentYear && d.month == currentMonth)
                                  .collect(Collectors.groupingBy(d -> {
                                      LocalDate date = LocalDate.of(d.year, d.month, d.day);
                                      int weekOfMonth = date.get(weekFields.weekOfMonth());
@@ -256,8 +270,12 @@ public class Stactics {
         Map<String, Integer> yearData;
 
         YearBarChartPanel(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            int currentYear = now.getYear();
+
             this.yearData = data.stream()
                                 .filter(d -> d.progress == 100)
+                                .filter(d -> d.year == currentYear)
                                 .collect(Collectors.groupingBy(d -> String.valueOf(d.month), Collectors.summingInt(d -> 1)));
         }
 
@@ -291,10 +309,52 @@ public class Stactics {
     class PieChartPanel extends JPanel {
         Map<String, Long> subjectData;
 
-        PieChartPanel(List<ProgressData> data) {
-            this.subjectData = data.stream()
-                                   .filter(d -> d.progress == 100)
-                                   .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
+        PieChartPanel(List<ProgressData> data, String period) {
+            if (period.equals("week")) {
+                this.subjectData = calculateWeeklySubjectData(data);
+            } else if (period.equals("month")) {
+                this.subjectData = calculateMonthlySubjectData(data);
+            } else if (period.equals("year")) {
+                this.subjectData = calculateYearlySubjectData(data);
+            } else {
+                this.subjectData = new HashMap<>();
+            }
+        }
+
+        private Map<String, Long> calculateWeeklySubjectData(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            WeekFields weekFields = WeekFields.of(Locale.getDefault());
+            int currentWeek = now.get(weekFields.weekOfYear());
+            int currentYear = now.getYear();
+
+            return data.stream()
+                       .filter(d -> d.progress == 100)
+                       .filter(d -> {
+                           LocalDate date = LocalDate.of(d.year, d.month, d.day);
+                           return date.get(weekFields.weekOfYear()) == currentWeek && d.year == currentYear;
+                       })
+                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
+        }
+
+        private Map<String, Long> calculateMonthlySubjectData(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            int currentMonth = now.getMonthValue();
+            int currentYear = now.getYear();
+
+            return data.stream()
+                       .filter(d -> d.progress == 100)
+                       .filter(d -> d.year == currentYear && d.month == currentMonth)
+                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
+        }
+
+        private Map<String, Long> calculateYearlySubjectData(List<ProgressData> data) {
+            LocalDate now = LocalDate.now();
+            int currentYear = now.getYear();
+
+            return data.stream()
+                       .filter(d -> d.progress == 100)
+                       .filter(d -> d.year == currentYear)
+                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
         }
 
         @Override
@@ -340,12 +400,13 @@ public class Stactics {
             }
         }
     }
-
+    /*
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Stactics());
     }
+    */
+       
     public JInternalFrame getInternalFrame() {
     	return jf;
     }
-
 }
