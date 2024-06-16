@@ -1,4 +1,4 @@
-package dudeozy;
+package doduzy;
 
 import java.awt.*;
 import javax.swing.*;
@@ -32,8 +32,8 @@ public class Stactics {
         // 데이터베이스 연결 설정
         try {
             String url = "jdbc:oracle:thin:@localhost:1521:xe"; // 데이터베이스 URL을 설정합니다.
-            String username = "SYSTEM"; // 데이터베이스 사용자 이름을 설정합니다.
-            String password = "foroopcurie"; // 데이터베이스 비밀번호를 설정합니다.
+            String username = "system"; // 데이터베이스 사용자 이름을 설정합니다.
+            String password = "oopdata"; // 데이터베이스 비밀번호를 설정합니다.
             conn = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -69,9 +69,9 @@ public class Stactics {
                 .filter(d -> d.year == today.getYear() && d.month == today.getMonthValue() && d.day == today.getDayOfMonth())
                 .collect(Collectors.toList());
 
-        // 전체 진행 상황 게이지 추가
+        // 오늘 날짜 기준 전체 진행 상황 게이지 추가
         JProgressBar overallProgressBar = new JProgressBar();
-        overallProgressBar.setValue(calculateOverallProgress(progressDataList));
+        overallProgressBar.setValue(calculateOverallProgress(todayData));
         overallProgressBar.setString("전체 진행상황: " + overallProgressBar.getValue() + "%");
         overallProgressBar.setStringPainted(true);
         one.add(overallProgressBar);
@@ -414,9 +414,9 @@ public class Stactics {
     /*
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Stactics());
-    }
+    }  
     */
-       
+    
     public JInternalFrame getInternalFrame() {
     	return jf;
     }
