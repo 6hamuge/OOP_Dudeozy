@@ -1,5 +1,3 @@
-package dudeozy;
-
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
@@ -10,14 +8,15 @@ import java.util.*;
 import java.util.List;
 
 public class DDay {
-    private JInternalFrame frame;
+////전체 틀 만들어!!////
+	private JInternalFrame frame;
     private JDesktopPane desktopPane;
 
     public DDay() {
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
 
         frame = new JInternalFrame("D-day ");
-        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
 
         desktopPane = new JDesktopPane();
@@ -27,7 +26,7 @@ public class DDay {
 
         frame.setVisible(true);
     }
-
+/////////
     private void loadDataFromDatabase() {
         Map<String, List<ScheduleItem>> scheduleMap = new HashMap<>();
 
@@ -51,10 +50,12 @@ public class DDay {
                 LocalDate targetDate = LocalDate.of(year, month, day);
                 long dDay = calculateDaysUntil(targetDate);
 
-                // 날짜가 이미 지난 일정
+                // 날짜가 이미 지난 일정_건너 뛰어!
                 if (targetDate.isBefore(currentDate)) {
                     continue;
                 }
+                
+                String formattedTime = " (" + time.substring(0, 2) + ":" + time.substring(2) + ")";//시간!
 
                 ScheduleItem item = new ScheduleItem(subject, targetDate, time, task, importance, completed);
                 String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
@@ -132,7 +133,7 @@ public class DDay {
         LocalDate currentDate = LocalDate.now();
         return ChronoUnit.DAYS.between(currentDate, targetDate);
     }
-
+/////취소선!////
     private static void toggleStrikeThrough(JCheckBox checkBox) {
         boolean completed = checkBox.isSelected();
         String text = checkBox.getText();
@@ -155,7 +156,7 @@ public class DDay {
             checkBox.setText(text.replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
-
+////반영하기!////
     private static void updateDatabase(String task, boolean completed) {
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE task = ?")) {
@@ -168,7 +169,7 @@ public class DDay {
             e.printStackTrace();
         }
     }
-
+////////
     private static class ScheduleItem {
         private final String subject;
         private final LocalDate date;
@@ -210,10 +211,6 @@ public class DDay {
             return completed;
         }
     }
-    
-    public JInternalFrame getInternalFrame() {
-	    return frame;
-	}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(DDay::new);
