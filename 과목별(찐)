@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.table.DefaultTableModel;
@@ -42,7 +43,6 @@ public class Obje extends JInternalFrame {
         }
 
         getContentPane().add(tabbedPane, BorderLayout.CENTER);
-        setLocationRelativeTo(null);
         setVisible(true);
 
         addTableListeners(); // 테이블 리스너 추가
@@ -76,7 +76,7 @@ public class Obje extends JInternalFrame {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD)) {
             for (String subject : subjects) {
                 // 각 과목별로 할 일 데이터를 가져오는 쿼리
-                String query = "SELECT completed, task, TO_CHAR(year) || '.' || TO_CHAR(month) || '.' || TO_CHAR(day) AS date FROM Schedule WHERE subject = ?";
+            	String query = "SELECT completed, task, TO_CHAR(year) || '.' || TO_CHAR(month) || '.' || TO_CHAR(day) AS task_date FROM Schedule WHERE subject = ?";
                 PreparedStatement stmt = conn.prepareStatement(query);
                 stmt.setString(1, subject);
                 ResultSet rs = stmt.executeQuery();
@@ -97,7 +97,7 @@ public class Obje extends JInternalFrame {
                 model.addColumn("날짜");
 
                 while (rs.next()) {
-                    model.addRow(new Object[]{rs.getBoolean("completed"), rs.getString("task"), rs.getString("date")});
+                    model.addRow(new Object[]{rs.getBoolean("completed"), rs.getString("task"), rs.getString("task_date")});
                 }
 
                 models.add(model);
@@ -156,6 +156,7 @@ public class Obje extends JInternalFrame {
     }
 
     // CheckBoxRenderer 클래스
+ // CheckBoxRenderer 클래스
     class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
         public CheckBoxRenderer() {
             setHorizontalAlignment(JLabel.CENTER);
@@ -174,11 +175,14 @@ public class Obje extends JInternalFrame {
             // 첫 번째 열(완료 체크박스)에서만 동작하도록 설정
             if (column == 0) {
                 setSelected((value != null && (Boolean) value));
+            } else {
+                setText((value == null) ? "" : value.toString()); // 두 번째 열에 데이터 설정
             }
 
             return this;
         }
     }
+
 
     // 전체 UI 폰트 설정 메서드
     public static void setUIFont(FontUIResource f) {
