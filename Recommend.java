@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Recommend {
-    //JFrame frame;
-	JInternalFrame frame;
+    JInternalFrame frame;
+	//JFrame frame;
     private Connection connection;
 
     public Recommend() throws SQLException {
@@ -23,17 +23,16 @@ public class Recommend {
     }
 
     // 날짜를 기준으로 해당 날짜에 해당하는 Schedule 테이블의 이벤트 이름과 할 일 가져오기
-    public List<EventDetails> getEventsOnDate(LocalDate date) throws SQLException {
+    public List<EventDetails> getEventsOnMonth(int year, int month) throws SQLException {
         List<EventDetails> events = new ArrayList<>();
         String query = "SELECT S.subject, S.task " +
                        "FROM Schedule S " +
                        "JOIN UserSettingevent U ON S.subject = U.event_name " +
-                       "WHERE S.year = ? AND S.month = ? AND S.day = ?";
+                       "WHERE S.year = ? AND S.month = ?";
 
         try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setInt(1, date.getYear());
-            statement.setInt(2, date.getMonthValue());
-            statement.setInt(3, date.getDayOfMonth());
+            statement.setInt(1, year);
+            statement.setInt(2, month);
 
             ResultSet resultSet = statement.executeQuery();
 
@@ -47,13 +46,13 @@ public class Recommend {
         return events;
     }
 
-    // 작년 오늘 날짜에 발생한 이벤트 가져오기
+    // 작년 이번 달에 발생한 이벤트 가져오기
     public List<EventDetails> getLastYearEvents() {
         List<EventDetails> lastYearEvents = new ArrayList<>();
-        LocalDate lastYearSameDate = LocalDate.now().minusYears(1);
+        LocalDate lastYearSameMonth = LocalDate.now().minusYears(1);
 
         try {
-            lastYearEvents = getEventsOnDate(lastYearSameDate);
+            lastYearEvents = getEventsOnMonth(lastYearSameMonth.getYear(), lastYearSameMonth.getMonthValue());
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -72,6 +71,7 @@ public class Recommend {
         }
 
         frame = new JInternalFrame("Recommendation Panel");
+        //frame = new JFrame("Recommendation Panel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
 
@@ -84,7 +84,7 @@ public class Recommend {
         for (EventDetails event : lastYearEvents) {
             panel.add(new JLabel("- " + event.getTask()));
         }
-        
+
         panel.add(new JLabel("이번 년도는 필요없으신가요?\n"));
         frame.getContentPane().add(panel, BorderLayout.CENTER);
         frame.setVisible(true);
@@ -114,9 +114,20 @@ public class Recommend {
             return task;
         }
     }
-
+    
+    
+    
     public JInternalFrame getInternalFrame() {
         return frame;
     }
-
+    
+    /*
+    public static void main(String[] args) {
+        try {
+            Recommend recommendationSystem = new Recommend();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    */
 }
