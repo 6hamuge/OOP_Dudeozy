@@ -1,4 +1,4 @@
-package doduzy;
+package dudeozy;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,8 +14,8 @@ public class Recommend {
 
     public Recommend() throws SQLException {
         String jdbcUrl = "jdbc:oracle:thin:@localhost:1521:xe"; // Update with your Oracle JDBC URL
-        String username = "system"; // Update with your database username
-        String password = "oopdata"; // Update with your database password
+        String username = "SYSTEM"; // Update with your database username
+        String password = "foroopcurie"; // Update with your database password
 
         connection = DriverManager.getConnection(jdbcUrl, username, password);
 
