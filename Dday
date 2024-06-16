@@ -1,58 +1,54 @@
-import javax.swing.*; 
-import java.awt.*; 
-import java.sql.Connection; 
-import java.sql.DriverManager; 
-import java.sql.PreparedStatement; 
-import java.sql.ResultSet; 
-import java.time.LocalDate; 
-import java.time.temporal.ChronoUnit; 
-import java.util.ArrayList; 
-import java.util.Collections; 
+import javax.swing.*;
+import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap; 
-import java.util.List; 
-import java.util.Map; 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.swing.plaf.FontUIResource;
 
 public class DDay {
-    JInternalFrame frame;
+    private JInternalFrame frame;
+    private JDesktopPane desktopPane; // 
 
     public DDay() {
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
-        Dimension dim = new Dimension(1920, 1080); 
-        frame = new JInternalFrame("D-day"); 
-        frame.setLocation(100, 100); 
-        frame.setPreferredSize(dim);
 
-        JPanel panel = new JPanel(); 
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        frame = new JInternalFrame("D-day ");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 600);
 
-        loadDataFromDatabase(panel); 
+        desktopPane = new JDesktopPane(); 
+        frame.add(desktopPane, BorderLayout.CENTER);
 
-        JScrollPane scrollPane = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        frame.add(scrollPane);
+        loadDataFromDatabase();
 
-        frame.pack(); 
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
-        frame.setVisible(true); 
+        frame.setVisible(true);
     }
 
-    private static void loadDataFromDatabase(JPanel panel) {
+    private void loadDataFromDatabase() {
         Map<String, List<ScheduleItem>> scheduleMap = new HashMap<>();
 
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, task, importance, completed FROM Schedule")) {
 
-            ResultSet rs = ps.executeQuery(); 
+            ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                String subject = rs.getString("subject"); 
-                int year = rs.getInt("year"); 
-                int month = rs.getInt("month"); 
-                int day = rs.getInt("day"); 
-                String task = rs.getString("task"); 
+                String subject = rs.getString("subject");
+                int year = rs.getInt("year");
+                int month = rs.getInt("month");
+                int day = rs.getInt("day");
+                String task = rs.getString("task");
                 int importance = rs.getInt("importance");
-                boolean completed = rs.getInt("completed") == 1; 
+                boolean completed = rs.getInt("completed") == 1;
 
                 LocalDate targetDate = LocalDate.of(year, month, day);
                 long dDay = calculateDaysUntil(targetDate);
@@ -66,30 +62,46 @@ public class DDay {
             List<Map.Entry<String, List<ScheduleItem>>> entryList = new ArrayList<>(scheduleMap.entrySet());
             Collections.sort(entryList, Comparator.comparingLong(e -> parseDDay(e.getKey())));
 
+            int yOffset = 10;
             for (Map.Entry<String, List<ScheduleItem>> entry : entryList) {
                 List<ScheduleItem> itemList = entry.getValue();
                 itemList.sort(Comparator.comparingInt(ScheduleItem::getImportance).reversed());
 
-                for (ScheduleItem item : itemList) {
-                    JPanel dDayPanel = new JPanel(); 
-                    dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS));
+                JInternalFrame internalFrame = new JInternalFrame(entry.getKey(), true, true, true, true);
+                internalFrame.setSize(400, 300); 
+                internalFrame.setLocation(20, yOffset); 
+                internalFrame.setLayout(new BorderLayout()); 
 
-                    JCheckBox taskCheckBox = new JCheckBox(item.getTask()); 
-                    taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18)); 
-                    taskCheckBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, taskCheckBox.getPreferredSize().height));
+                JPanel dDayPanel = new JPanel();
+                dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS));
+
+                for (ScheduleItem item : itemList) {
+                    JPanel itemPanel = new JPanel(new BorderLayout());
+                    JCheckBox taskCheckBox = new JCheckBox(item.getTask());
+                    taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18));
                     taskCheckBox.setSelected(item.isCompleted());
                     toggleStrikeThrough(taskCheckBox, item.isCompleted());
                     taskCheckBox.addActionListener(e -> toggleStrikeThrough(taskCheckBox));
 
-                    dDayPanel.add(taskCheckBox);
+                    JLabel dateLabel = new JLabel(item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth());
+                    dateLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
 
-                    dDayPanel.setBorder(BorderFactory.createTitledBorder(item.getSubject() + " " + entry.getKey() + " / " + item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth()));
-                    panel.add(dDayPanel);
+                    itemPanel.add(taskCheckBox, BorderLayout.CENTER);
+                    itemPanel.add(dateLabel, BorderLayout.LINE_END);
+                    itemPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+                    dDayPanel.add(itemPanel);
                 }
+
+                internalFrame.add(new JScrollPane(dDayPanel)); 
+                desktopPane.add(internalFrame); 
+                internalFrame.setVisible(true); 
+
+                yOffset += 40; 
             }
 
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
         }
     }
 
@@ -105,8 +117,8 @@ public class DDay {
     }
 
     private static long calculateDaysUntil(LocalDate targetDate) {
-        LocalDate currentDate = LocalDate.now(); 
-        return ChronoUnit.DAYS.between(currentDate, targetDate); 
+        LocalDate currentDate = LocalDate.now();
+        return ChronoUnit.DAYS.between(currentDate, targetDate);
     }
 
     private static long parseDDay(String dDayText) {
@@ -141,12 +153,12 @@ public class DDay {
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE task = ?")) {
 
-            ps.setInt(1, completed ? 1 : 0); 
-            ps.setString(2, task); 
-            ps.executeUpdate(); 
+            ps.setInt(1, completed ? 1 : 0);
+            ps.setString(2, task);
+            ps.executeUpdate();
 
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
         }
     }
 
@@ -184,10 +196,6 @@ public class DDay {
         public boolean isCompleted() {
             return completed;
         }
-    }
-
-    public JInternalFrame getInternalFrame() {
-        return frame;
     }
 
     public static void main(String[] args) {
