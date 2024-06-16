@@ -1,5 +1,6 @@
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
@@ -117,7 +118,7 @@ public class Obje extends JInternalFrame {
         table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JCheckBox()));
 
         // 두 번째 열(할 일)에 대한 취소선 렌더러 설정
-        table.getColumnModel().getColumn(1).setCellRenderer(new StrikeThroughRenderer());
+        table.getColumnModel().getColumn(1).setCellRenderer(new StrikethroughRenderer());
     }
 
     // 테이블 모델 리스너 추가
@@ -180,36 +181,17 @@ public class Obje extends JInternalFrame {
         }
     }
 
-    // StrikeThroughRenderer 클래스
-    class StrikeThroughRenderer extends JLabel implements TableCellRenderer {
-        public StrikeThroughRenderer() {
-            setOpaque(true);
-        }
-
+    // StrikethroughRenderer 클래스
+    class StrikethroughRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
+            boolean isCompleted = (Boolean) table.getValueAt(row, 0);
+            if (isCompleted) {
+                value = "<html><strike>" + value + "</strike></html>";
             } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
+                value = "<html>" + value + "</html>";
             }
-
-            // 텍스트를 설정하고 완료된 항목에 대해 취소선을 적용
-            if (value != null) {
-                setText(value.toString());
-                Boolean completed = (Boolean) table.getModel().getValueAt(row, 0);
-                if (completed != null && completed) {
-                    setFont(getFont().deriveFont(Font.PLAIN | Font.STRIKETHROUGH_ON));
-                } else {
-                    setFont(getFont().deriveFont(Font.PLAIN));
-                }
-            } else {
-                setText("");
-            }
-
-            return this;
+            return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         }
     }
 
