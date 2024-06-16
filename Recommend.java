@@ -8,11 +8,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Recommend {
-
+    JInternalFrame frame;
     private Connection connection;
 
-    public Recommend(String jdbcUrl, String username, String password) throws SQLException {
+    public Recommend() throws SQLException {
+        String jdbcUrl = "jdbc:oracle:thin:@localhost:1521:xe"; // Update with your Oracle JDBC URL
+        String username = "system"; // Update with your database username
+        String password = "oopdata"; // Update with your database password
+
         connection = DriverManager.getConnection(jdbcUrl, username, password);
+
+        displayRecommendationPanel();
     }
 
     // 날짜를 기준으로 해당 날짜에 해당하는 Schedule 테이블의 이벤트 이름과 할 일 가져오기
@@ -40,66 +46,32 @@ public class Recommend {
         return events;
     }
 
-    // 이번 해에는 더 이상 필요하지 않은 이벤트가 있는지 체크
-    public List<EventDetails> checkUnnecessaryEvents() {
-        List<EventDetails> unnecessaryEvents = new ArrayList<>();
-        LocalDate today = LocalDate.now();
-        LocalDate lastYearSameDate = today.minusYears(1);
+    // 작년 오늘 날짜에 발생한 이벤트 가져오기
+    public List<EventDetails> getLastYearEvents() {
+        List<EventDetails> lastYearEvents = new ArrayList<>();
+        LocalDate lastYearSameDate = LocalDate.now().minusYears(1);
 
         try {
-            // 작년 이 날짜에 발생한 이벤트
-            List<EventDetails> lastYearEvents = getEventsOnDate(lastYearSameDate);
-
-            // 이번 해에는 더 이상 필요하지 않은 이벤트 체크
-            String query = "SELECT S.subject, S.task " +
-                           "FROM Schedule S " +
-                           "JOIN UserSettingevent U ON S.subject = U.event_name " +
-                           "WHERE S.year = ? AND S.month = ? AND S.day = ?";
-
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                statement.setInt(1, today.getYear());
-                statement.setInt(2, today.getMonthValue());
-                statement.setInt(3, today.getDayOfMonth());
-
-                ResultSet resultSet = statement.executeQuery();
-
-                while (resultSet.next()) {
-                    String eventName = resultSet.getString("subject");
-                    String task = resultSet.getString("task");
-                    boolean foundLastYear = false;
-                    for (EventDetails event : lastYearEvents) {
-                        if (event.getEventName().equals(eventName) && event.getTask().equals(task)) {
-                            unnecessaryEvents.add(new EventDetails(eventName, task));
-                            foundLastYear = true;
-                            break;
-                        }
-                    }
-                    if (!foundLastYear) {
-                        unnecessaryEvents.add(new EventDetails(eventName, task));
-                    }
-                }
-            }
-
+            lastYearEvents = getEventsOnDate(lastYearSameDate);
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return unnecessaryEvents;
+        return lastYearEvents;
     }
 
     // 추천 패널 표시
- // 추천 패널 표시
     public void displayRecommendationPanel() {
-        List<EventDetails> unnecessaryEvents = checkUnnecessaryEvents();
+        List<EventDetails> lastYearEvents = getLastYearEvents();
 
         // 작년 이벤트가 없으면 패널을 표시하지 않음
-        if (unnecessaryEvents.isEmpty()) {
+        if (lastYearEvents.isEmpty()) {
             JOptionPane.showMessageDialog(null, "작년에는 이벤트가 없습니다.", "No Events Last Year", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        JFrame frame = new JFrame("Recommendation Panel");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame = new JInternalFrame("Recommendation Panel");
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
 
         JPanel panel = new JPanel();
@@ -108,27 +80,13 @@ public class Recommend {
         panel.add(new JLabel("작년에 있었던 이벤트:"));
 
         // 작년에 있었던 이벤트 이름과 할 일(task)을 메시지에 추가
-        for (EventDetails event : unnecessaryEvents) {
+        for (EventDetails event : lastYearEvents) {
             panel.add(new JLabel("- " + event.getTask()));
         }
-
-        frame.getContentPane().add(panel, BorderLayout.CENTER);
+        
         panel.add(new JLabel("이번 년도는 필요없으신가요?\n"));
+        frame.getContentPane().add(panel, BorderLayout.CENTER);
         frame.setVisible(true);
-    }
-
-    
-    public static void main(String[] args) {
-        String jdbcUrl = "jdbc:oracle:thin:@localhost:1521:xe"; // Update with your Oracle JDBC URL
-        String username = "system"; // Update with your database username
-        String password = "oopdata"; // Update with your database password
-
-        try {
-            Recommend recommendationSystem = new Recommend(jdbcUrl, username, password);
-            recommendationSystem.displayRecommendationPanel();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
     }
 
     public void close() throws SQLException {
@@ -154,5 +112,9 @@ public class Recommend {
         public String getTask() {
             return task;
         }
+    }
+
+    public JInternalFrame getInternalFrame() {
+        return frame;
     }
 }
