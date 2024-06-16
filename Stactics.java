@@ -1,4 +1,4 @@
-package doduzy;
+package dudeozy;
 
 import java.awt.*;
 import javax.swing.*;
@@ -32,8 +32,8 @@ public class Stactics {
         // 데이터베이스 연결 설정
         try {
             String url = "jdbc:oracle:thin:@localhost:1521:xe"; // 데이터베이스 URL을 설정합니다.
-            String username = "system"; // 데이터베이스 사용자 이름을 설정합니다.
-            String password = "oopdata"; // 데이터베이스 비밀번호를 설정합니다.
+            String username = "SYSTEM"; // 데이터베이스 사용자 이름을 설정합니다.
+            String password = "foroopcurie"; // 데이터베이스 비밀번호를 설정합니다.
             conn = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -419,5 +419,9 @@ public class Stactics {
     
     public JInternalFrame getInternalFrame() {
     	return jf;
+    }
+
+    public JTabbedPane getTabbedPane() {
+        return tabpane;
     }
 }
