@@ -1,22 +1,15 @@
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import javax.swing.plaf.FontUIResource;
 
 public class DDay {
     private JInternalFrame frame;
-    private JDesktopPane desktopPane; // 
+    private JDesktopPane desktopPane;
 
     public DDay() {
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
@@ -25,7 +18,7 @@ public class DDay {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 600);
 
-        desktopPane = new JDesktopPane(); 
+        desktopPane = new JDesktopPane();
         frame.add(desktopPane, BorderLayout.CENTER);
 
         loadDataFromDatabase();
@@ -41,6 +34,8 @@ public class DDay {
 
             ResultSet rs = ps.executeQuery();
 
+            LocalDate currentDate = LocalDate.now();
+
             while (rs.next()) {
                 String subject = rs.getString("subject");
                 int year = rs.getInt("year");
@@ -53,37 +48,51 @@ public class DDay {
                 LocalDate targetDate = LocalDate.of(year, month, day);
                 long dDay = calculateDaysUntil(targetDate);
 
+                // 날짜가 이미 지난 일정은 건너뜁니다.
+                if (targetDate.isBefore(currentDate)) {
+                    continue;
+                }
+
                 ScheduleItem item = new ScheduleItem(subject, targetDate, task, importance, completed);
                 String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
 
-                scheduleMap.computeIfAbsent(dDayText, k -> new ArrayList<>()).add(item);
+                if (!completed) {
+                    scheduleMap.computeIfAbsent(dDayText, k -> new ArrayList<>()).add(item);
+                }
             }
 
             List<Map.Entry<String, List<ScheduleItem>>> entryList = new ArrayList<>(scheduleMap.entrySet());
-            Collections.sort(entryList, Comparator.comparingLong(e -> parseDDay(e.getKey())));
+            // D-day가 빠른 순서대로 정렬 (D-day부터 시작하도록)
+            Collections.sort(entryList, Comparator.comparingLong(e -> (e.getKey().equals("D-day") ? 0 : Long.parseLong(e.getKey().substring(2)))));
 
             int yOffset = 10;
             for (Map.Entry<String, List<ScheduleItem>> entry : entryList) {
                 List<ScheduleItem> itemList = entry.getValue();
+                // 중요도에 따라 내림차순으로 정렬
                 itemList.sort(Comparator.comparingInt(ScheduleItem::getImportance).reversed());
 
                 JInternalFrame internalFrame = new JInternalFrame(entry.getKey(), true, true, true, true);
-                internalFrame.setSize(400, 300); 
-                internalFrame.setLocation(20, yOffset); 
-                internalFrame.setLayout(new BorderLayout()); 
+                internalFrame.setSize(400, 300);
+                internalFrame.setLocation(20, yOffset);
+                internalFrame.setLayout(new BorderLayout());
 
                 JPanel dDayPanel = new JPanel();
                 dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS));
 
                 for (ScheduleItem item : itemList) {
                     JPanel itemPanel = new JPanel(new BorderLayout());
-                    JCheckBox taskCheckBox = new JCheckBox(item.getTask());
+                    JCheckBox taskCheckBox = new JCheckBox(item.getSubject() + ") " + item.getTask());
                     taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18));
                     taskCheckBox.setSelected(item.isCompleted());
                     toggleStrikeThrough(taskCheckBox, item.isCompleted());
                     taskCheckBox.addActionListener(e -> toggleStrikeThrough(taskCheckBox));
 
-                    JLabel dateLabel = new JLabel(item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth());
+                    JLabel dateLabel = new JLabel();
+                    if (entry.getKey().equals("D-day")) {
+                        dateLabel.setText("오늘");
+                    } else {
+                        dateLabel.setText("D-" + entry.getKey().substring(2) + " / " + item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth());
+                    }
                     dateLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
 
                     itemPanel.add(taskCheckBox, BorderLayout.CENTER);
@@ -93,11 +102,11 @@ public class DDay {
                     dDayPanel.add(itemPanel);
                 }
 
-                internalFrame.add(new JScrollPane(dDayPanel)); 
-                desktopPane.add(internalFrame); 
-                internalFrame.setVisible(true); 
+                internalFrame.add(new JScrollPane(dDayPanel));
+                desktopPane.add(internalFrame);
+                internalFrame.setVisible(true);
 
-                yOffset += 40; 
+                yOffset += 40;
             }
 
         } catch (Exception e) {
@@ -121,15 +130,10 @@ public class DDay {
         return ChronoUnit.DAYS.between(currentDate, targetDate);
     }
 
-    private static long parseDDay(String dDayText) {
-        if (dDayText.equals("D-day")) return 0;
-        return Long.parseLong(dDayText.substring(2));
-    }
-
     private static void toggleStrikeThrough(JCheckBox checkBox) {
         checkBox.addActionListener(e -> {
             boolean completed = checkBox.isSelected();
-            String task = checkBox.getText();
+            String task = checkBox.getText().substring(checkBox.getText().indexOf(")") + 2);
 
             updateDatabase(task, completed);
         });
