@@ -12,8 +12,8 @@ import javax.swing.*;
 import javax.swing.text.Position;
 import javax.swing.tree.*;
 
-public class SettingFrame{
-	private static final String JDBC_DRIVERCLASSNAME = "oracle.jdbc.driver.OracleDriver";
+public class SettingFrame {
+    private static final String JDBC_DRIVERCLASSNAME = "oracle.jdbc.driver.OracleDriver";
     private static final String JDBC_URL = "jdbc:oracle:thin:@localhost:1521:XE";
     private static final String JDBC_USER = "system";
     private static final String JDBC_PASSWORD = "databaseoracle";
@@ -52,8 +52,6 @@ public class SettingFrame{
         subjectTree.setDropMode(DropMode.ON_OR_INSERT);
         subjectTree.setTransferHandler(new TreeTransferHandler(subjectTree, subjectTreeModel, true));
 
-        JTree eventTree = null;
-
         JScrollPane subjectTreeView = new JScrollPane(subjectTree);
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -64,23 +62,7 @@ public class SettingFrame{
         gbc.weighty = 1.0;
         p1.add(subjectTreeView, gbc);
 
-        JButton addSubjectButton = new JButton("과목 추가");
-        addSubjectButton.addActionListener(e -> {
-            String subjectName = JOptionPane.showInputDialog(f, "새로운 과목 이름:");
-            if (subjectName != null && !subjectName.trim().isEmpty()) {
-                DefaultMutableTreeNode newSubject = new DefaultMutableTreeNode(subjectName);
-                subjectRoot.add(newSubject);
-                subjectTreeModel.reload();
-                saveSubject(subjectName);
-                updateComboBoxes(subjectTree, eventTree);
-            }
-        });
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 1;
-        gbc.gridheight = 1;
-        gbc.insets = new Insets(5, 10, 0, 10);
-        p1.add(addSubjectButton, gbc);
+        
 
         JLabel l4 = new JLabel("이벤트 목록");
         gbc.gridx = 0;
@@ -107,6 +89,24 @@ public class SettingFrame{
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         p1.add(eventTreeView, gbc);
+        
+        JButton addSubjectButton = new JButton("과목 추가");
+        addSubjectButton.addActionListener(e -> {
+            String subjectName = JOptionPane.showInputDialog(f, "새로운 과목 이름:");
+            if (subjectName != null && !subjectName.trim().isEmpty()) {
+                DefaultMutableTreeNode newSubject = new DefaultMutableTreeNode(subjectName);
+                subjectRoot.add(newSubject);
+                subjectTreeModel.reload();
+                saveSubject(subjectName);
+                updateComboBoxes(subjectTree, eventTree1);
+            }
+        });
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 1;
+        gbc.gridheight = 1;
+        gbc.insets = new Insets(5, 10, 0, 10);
+        p1.add(addSubjectButton, gbc);
 
         JButton addEventButton = new JButton("이벤트 추가");
         addEventButton.addActionListener(e -> {
