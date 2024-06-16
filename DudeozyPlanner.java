@@ -65,12 +65,16 @@ public class DudeozyPlanner {
         JDesktopPane desktopPane5 = new JDesktopPane();
         Recommend recommend= new Recommend();
         JInternalFrame internalFrame5 = recommend.getInternalFrame();
-        BasicInternalFrameUI ui5 = (BasicInternalFrameUI) internalFrame5.getUI();
-        ui5.setNorthPane(null);
-        internalFrame5.setBorder(null);
-        internalFrame5.setSize(1440,800);
-        desktopPane5.add(internalFrame5);
-        tabbedPane.addTab("추천", desktopPane5);
+        if (internalFrame5 != null) {
+            BasicInternalFrameUI ui5 = (BasicInternalFrameUI) internalFrame5.getUI();
+            ui5.setNorthPane(null);
+            internalFrame5.setBorder(null);
+            internalFrame5.setSize(1440, 800);
+            desktopPane5.add(internalFrame5);
+            tabbedPane.addTab("추천", desktopPane5);
+        } else {
+            tabbedPane.addTab("추천", new JPanel()); // 탭을 비워둠
+        }
         
         // 여섯 번째 탭: 사용자 설정
         JDesktopPane desktopPane6 = new JDesktopPane();
@@ -83,26 +87,24 @@ public class DudeozyPlanner {
         desktopPane6.add(internalFrame6);
         tabbedPane.addTab("사용자 설정", desktopPane6);
        
+        
+        // 데이터베이스에서 알람 설정
+        Alarm alarm = new Alarm();
+        alarm.runAlarm();
+        
         tabbedPane.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
                 int selectedIndex = tabbedPane.getSelectedIndex();
                 if (selectedIndex == 0) { // MainPage 탭이 선택될 때
-                	mainPage.todayListModel.clear();
+                    mainPage.todayListModel.clear();
                     mainPage.fetchTodayTasks();
-                } else if (selectedIndex == 3) {
-                	// Get the Stactics internal frame
-                    Stactics stacticsFrame = stactics; // 기존 인스턴스 재사용
-
-                    // Refresh the statistics data
-                    JInternalFrame statsInternalFrame = stacticsFrame.getInternalFrame();
-                    statsInternalFrame.getContentPane().removeAll();
-                    statsInternalFrame.getContentPane().add(stacticsFrame.getTabbedPane(), BorderLayout.CENTER);
-                    statsInternalFrame.revalidate();
-                    statsInternalFrame.repaint();
+                } else if (selectedIndex == 3) { // Stactics 탭이 선택될 때
+                	stactics.updateTabs();
                 }
             }
         });
+            
         
         // 메인 프레임에 탭 패널 추가
         mainFrame.getContentPane().add(tabbedPane, BorderLayout.CENTER);
