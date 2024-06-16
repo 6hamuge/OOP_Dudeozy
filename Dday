@@ -48,7 +48,7 @@ public class DDay {
                 LocalDate targetDate = LocalDate.of(year, month, day);
                 long dDay = calculateDaysUntil(targetDate);
 
-                // 날짜가 이미 지난 일정은 건너뜁니다.
+                // 날짜가 이미 지난 일정
                 if (targetDate.isBefore(currentDate)) {
                     continue;
                 }
