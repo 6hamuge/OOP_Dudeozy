@@ -288,30 +288,29 @@ public class SettingFrame {
         }
     }
 
+    
     private static void saveNotificationSettings(String selectedSubject, String selectedEvent, ArrayList<Integer> alertTimes) {
-        StringBuilder timeString = new StringBuilder();
-        for (Integer time : alertTimes) {
-            timeString.append(time);
-        }
-
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
-            // Insert into USERTASKSETTING
-            try (PreparedStatement pstmt1 = conn.prepareStatement("INSERT INTO USERSETTINGTASK (TASK_NAME, ALERT_TIME) VALUES (?, ?)")) {
-                pstmt1.setString(1, selectedSubject);
-                pstmt1.setInt(2, Integer.parseInt(timeString.toString()));
-                pstmt1.executeUpdate();
+            for (Integer time : alertTimes) {
+                try (PreparedStatement pstmt1 = conn.prepareStatement("INSERT INTO USERSETTINGTASK (TASK_NAME, ALERT_TIME) VALUES (?, ?)")) {
+                    pstmt1.setString(1, selectedSubject);
+                    pstmt1.setInt(2, time);
+                    pstmt1.executeUpdate();
+                }
             }
 
-            // Insert into USEREVENTSETTING
-            try (PreparedStatement pstmt2 = conn.prepareStatement("INSERT INTO USERSETTINGEVENT (EVENT_NAME, ALERT_TIME) VALUES (?, ?)")) {
-                pstmt2.setString(1, selectedEvent);
-                pstmt2.setInt(2, Integer.parseInt(timeString.toString()));
-                pstmt2.executeUpdate();
+            for (Integer time : alertTimes) {
+                try (PreparedStatement pstmt2 = conn.prepareStatement("INSERT INTO USERSETTINGEVENT (EVENT, ALERT_TIME) VALUES (?, ?)")) {
+                    pstmt2.setString(1, selectedEvent);
+                    pstmt2.setInt(2, time);
+                    pstmt2.executeUpdate();
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
 
     private static void saveSubjectColor(String selectedSubject, Color newcolor) {
         String colorString = String.format("#%02x%02x%02x", newcolor.getRed(), newcolor.getGreen(), newcolor.getBlue());
