@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.table.DefaultTableModel;
@@ -76,7 +75,7 @@ public class Obje extends JInternalFrame {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD)) {
             for (String subject : subjects) {
                 // 각 과목별로 할 일 데이터를 가져오는 쿼리
-            	String query = "SELECT completed, task, TO_CHAR(year) || '.' || TO_CHAR(month) || '.' || TO_CHAR(day) AS task_date FROM Schedule WHERE subject = ?";
+                String query = "SELECT completed, task, TO_CHAR(year) || '.' || TO_CHAR(month) || '.' || TO_CHAR(day) AS task_date FROM Schedule WHERE subject = ?";
                 PreparedStatement stmt = conn.prepareStatement(query);
                 stmt.setString(1, subject);
                 ResultSet rs = stmt.executeQuery();
@@ -118,7 +117,7 @@ public class Obje extends JInternalFrame {
         table.getColumnModel().getColumn(0).setCellEditor(new DefaultCellEditor(new JCheckBox()));
 
         // 두 번째 열(할 일)에 대한 취소선 렌더러 설정
-        table.getColumnModel().getColumn(1).setCellRenderer(new CheckBoxRenderer());
+        table.getColumnModel().getColumn(1).setCellRenderer(new StrikeThroughRenderer());
     }
 
     // 테이블 모델 리스너 추가
@@ -135,6 +134,7 @@ public class Obje extends JInternalFrame {
                     boolean completed = (boolean) model.getValueAt(row, column);
                     String task = (String) model.getValueAt(row, 1); // 할 일 열의 데이터 예시
                     updateDatabase(task, completed); // 데이터베이스 업데이트 메서드 호출
+                    table.repaint(); // 테이블 다시 그리기
                 }
             });
         }
@@ -156,7 +156,6 @@ public class Obje extends JInternalFrame {
     }
 
     // CheckBoxRenderer 클래스
- // CheckBoxRenderer 클래스
     class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
         public CheckBoxRenderer() {
             setHorizontalAlignment(JLabel.CENTER);
@@ -175,14 +174,44 @@ public class Obje extends JInternalFrame {
             // 첫 번째 열(완료 체크박스)에서만 동작하도록 설정
             if (column == 0) {
                 setSelected((value != null && (Boolean) value));
-            } else {
-                setText((value == null) ? "" : value.toString()); // 두 번째 열에 데이터 설정
             }
 
             return this;
         }
     }
 
+    // StrikeThroughRenderer 클래스
+    class StrikeThroughRenderer extends JLabel implements TableCellRenderer {
+        public StrikeThroughRenderer() {
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            // 텍스트를 설정하고 완료된 항목에 대해 취소선을 적용
+            if (value != null) {
+                setText(value.toString());
+                Boolean completed = (Boolean) table.getModel().getValueAt(row, 0);
+                if (completed != null && completed) {
+                    setFont(getFont().deriveFont(Font.PLAIN | Font.STRIKETHROUGH_ON));
+                } else {
+                    setFont(getFont().deriveFont(Font.PLAIN));
+                }
+            } else {
+                setText("");
+            }
+
+            return this;
+        }
+    }
 
     // 전체 UI 폰트 설정 메서드
     public static void setUIFont(FontUIResource f) {
