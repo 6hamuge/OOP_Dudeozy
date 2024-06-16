@@ -1,16 +1,20 @@
 package TeamProject;
 
 import java.awt.*;
-import java.awt.datatransfer.*;
-import java.awt.event.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
-
 import javax.swing.*;
-import javax.swing.text.Position;
-import javax.swing.tree.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 
 public class SettingFrame {
     private static final String JDBC_DRIVERCLASSNAME = "oracle.jdbc.driver.OracleDriver";
@@ -62,8 +66,6 @@ public class SettingFrame {
         gbc.weighty = 1.0;
         p1.add(subjectTreeView, gbc);
 
-        
-
         JLabel l4 = new JLabel("이벤트 목록");
         gbc.gridx = 0;
         gbc.gridy = 6;
@@ -89,7 +91,7 @@ public class SettingFrame {
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         p1.add(eventTreeView, gbc);
-        
+
         JButton addSubjectButton = new JButton("과목 추가");
         addSubjectButton.addActionListener(e -> {
             String subjectName = JOptionPane.showInputDialog(f, "새로운 과목 이름:");
@@ -98,7 +100,7 @@ public class SettingFrame {
                 subjectRoot.add(newSubject);
                 subjectTreeModel.reload();
                 saveSubject(subjectName);
-                updateComboBoxes(subjectTree, eventTree1);
+                updateComboBoxes();
             }
         });
         gbc.gridx = 0;
@@ -116,7 +118,7 @@ public class SettingFrame {
                 eventRoot.add(newEvent);
                 eventTreeModel.reload();
                 saveEvent(eventName);
-                updateComboBoxes(subjectTree, eventTree1);
+                updateComboBoxes();
             }
         });
         gbc.gridx = 0;
@@ -181,7 +183,6 @@ public class SettingFrame {
         JCheckBox cb1Day = new JCheckBox("하루 전");
         JCheckBox cb3Days = new JCheckBox("3일 전");
         JCheckBox cb1Week = new JCheckBox("일주일 전");
-      
 
         JPanel panel = new JPanel(new GridLayout(2, 4));
 
@@ -252,7 +253,7 @@ public class SettingFrame {
                 }
             }
         });
-        
+
         npGbc.gridx = 0;
         npGbc.gridy = 5;
         npGbc.gridwidth = 3;
@@ -267,7 +268,8 @@ public class SettingFrame {
         f.add(p1);
         f.setVisible(true);
 
-        updateComboBoxes(subjectTree, eventTree1);
+        loadSubjectsAndEvents(subjectTree, eventTree1);
+        updateComboBoxes();
     }
 
     private static void saveSubject(String subjectName) {
@@ -282,7 +284,7 @@ public class SettingFrame {
 
     private static void saveEvent(String eventName) {
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENTS (EVENT) VALUES (?)")) {
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENTS (EVENT_NAME) VALUES (?)")) {
             pstmt.setString(1, eventName);
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -297,21 +299,21 @@ public class SettingFrame {
             timeString.append(time);
         }
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGTASKS (TASK_NAME, ALERT_TIME) VALUES (?, ?)")) {
-            pstmt.setString(1, selectedSubject);
-            pstmt.setString(2, timeString.toString());
+             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASKS SET ALERT_TIME = ? WHERE TASK_NAME = ?")) {
+            pstmt.setString(1, timeString.toString());
+            pstmt.setString(2, selectedSubject);
             pstmt.executeUpdate();
-            } catch (SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            }
+        }
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-                PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENTS (EVENT_NAME, ALERT_TIME) VALUES (?, ?)")) {
-               pstmt.setString(1, selectedEvent);
-               pstmt.setString(2, timeString.toString());
-               pstmt.executeUpdate();
-               } catch (SQLException e) {
-               e.printStackTrace();
-           }
+             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGEVENTS SET ALERT_TIME = ? WHERE EVENT_NAME = ?")) {
+            pstmt.setString(1, timeString.toString());
+            pstmt.setString(2, selectedEvent);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void saveSubjectColor(String selectedSubject, Color newcolor) {
@@ -326,24 +328,69 @@ public class SettingFrame {
         }
     }
 
-    private static void updateComboBoxes(JTree subjectTree, JTree eventTree) {
+    private static void updateComboBoxes() {
         subjectComboBox.removeAllItems();
         eventComboBox.removeAllItems();
 
-        DefaultMutableTreeNode subjectRoot = (DefaultMutableTreeNode) subjectTree.getModel().getRoot();
-        Enumeration<?> subjects = subjectRoot.children();
-        while (subjects.hasMoreElements()) {
-            DefaultMutableTreeNode subject = (DefaultMutableTreeNode) subjects.nextElement();
-            subjectComboBox.addItem(subject.toString());
-        }
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             Statement stmt = conn.createStatement()) {
 
-        DefaultMutableTreeNode eventRoot = (DefaultMutableTreeNode) eventTree.getModel().getRoot();
-        Enumeration<?> events = eventRoot.children();
-        while (events.hasMoreElements()) {
-            DefaultMutableTreeNode event = (DefaultMutableTreeNode) events.nextElement();
-            eventComboBox.addItem(event.toString());
+            // 과목 불러오기
+            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASKS")) {
+                while (rsSubjects.next()) {
+                    subjectComboBox.addItem(rsSubjects.getString("TASK_NAME"));
+                }
+            }
+
+            // 이벤트 불러오기
+            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENTS")) {
+                while (rsEvents.next()) {
+                    eventComboBox.addItem(rsEvents.getString("EVENT_NAME"));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+
+
+    private static void loadSubjectsAndEvents(JTree subjectTree, JTree eventTree) {
+        DefaultTreeModel subjectTreeModel = (DefaultTreeModel) subjectTree.getModel();
+        DefaultTreeModel eventTreeModel = (DefaultTreeModel) eventTree.getModel();
+        DefaultMutableTreeNode subjectRoot = (DefaultMutableTreeNode) subjectTreeModel.getRoot();
+        DefaultMutableTreeNode eventRoot = (DefaultMutableTreeNode) eventTreeModel.getRoot();
+
+        subjectRoot.removeAllChildren();
+        eventRoot.removeAllChildren();
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+             Statement stmt = conn.createStatement()) {
+
+            // 과목 불러오기
+            try (ResultSet rsSubjects = stmt.executeQuery("SELECT TASK_NAME FROM USERSETTINGTASKS")) {
+                while (rsSubjects.next()) {
+                    String subjectName = rsSubjects.getString("TASK_NAME");
+                    subjectRoot.add(new DefaultMutableTreeNode(subjectName));
+                }
+            }
+
+            // 이벤트 불러오기
+            try (ResultSet rsEvents = stmt.executeQuery("SELECT EVENT_NAME FROM USERSETTINGEVENTS")) {
+                while (rsEvents.next()) {
+                    String eventName = rsEvents.getString("EVENT_NAME");
+                    eventRoot.add(new DefaultMutableTreeNode(eventName));
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        subjectTreeModel.reload();
+        eventTreeModel.reload();
+    }
+
 
     static class TreeTransferHandler extends TransferHandler {
         private final JTree tree;
@@ -402,3 +449,4 @@ public class SettingFrame {
         }
     }
 }
+
