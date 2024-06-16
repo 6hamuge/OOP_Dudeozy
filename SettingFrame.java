@@ -1,4 +1,5 @@
 package dudeozy;
+
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -287,25 +288,27 @@ public class SettingFrame {
         }
     }
 
-    private static void saveNotificationSettings(String selectedSubject, String selectedEvent, ArrayList<Integer> notificationTimes) {
+    private static void saveNotificationSettings(String selectedSubject, String selectedEvent, ArrayList<Integer> alertTimes) {
         StringBuilder timeString = new StringBuilder();
-        for (Integer time : notificationTimes) {
+        for (Integer time : alertTimes) {
             if (timeString.length() > 0) timeString.append(",");
             timeString.append(time);
         }
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASK SET ALERT_TIME = ? WHERE TASK_NAME = ?")) {
-            pstmt.setString(1, timeString.toString());
-            pstmt.setString(2, selectedSubject);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGEVENT SET ALERT_TIME = ? WHERE EVENT_NAME = ?")) {
-            pstmt.setString(1, timeString.toString());
-            pstmt.setString(2, selectedEvent);
-            pstmt.executeUpdate();
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD)) {
+            // Insert into USERTASKSETTING
+            try (PreparedStatement pstmt1 = conn.prepareStatement("INSERT INTO USERTASKSETTING (TASK_NAME, ALERT_TIME) VALUES (?, ?)")) {
+                pstmt1.setString(1, selectedSubject);
+                pstmt1.setString(2, timeString.toString());
+                pstmt1.executeUpdate();
+            }
+
+            // Insert into USEREVENTSETTING
+            try (PreparedStatement pstmt2 = conn.prepareStatement("INSERT INTO USEREVENTSETTING (EVENT, ALERT_TIME) VALUES (?, ?)")) {
+                pstmt2.setString(1, selectedEvent);
+                pstmt2.setString(2, timeString.toString());
+                pstmt2.executeUpdate();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
