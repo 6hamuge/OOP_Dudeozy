@@ -181,50 +181,55 @@ public class SettingFrame {
         JCheckBox cb1Day = new JCheckBox("하루 전");
         JCheckBox cb3Days = new JCheckBox("3일 전");
         JCheckBox cb1Week = new JCheckBox("일주일 전");
+      
 
-        JPanel checkBoxPanel = new JPanel(new GridLayout(2, 4));
-        checkBoxPanel.add(cb5Min);
-        checkBoxPanel.add(cb10Min);
-        checkBoxPanel.add(cb15Min);
-        checkBoxPanel.add(cb30Min);
-        checkBoxPanel.add(cb1Hour);
-        checkBoxPanel.add(cb1Day);
-        checkBoxPanel.add(cb3Days);
-        checkBoxPanel.add(cb1Week);
+        JPanel panel = new JPanel(new GridLayout(2, 4));
+
+        panel.add(cb5Min);
+        panel.add(cb10Min);
+        panel.add(cb15Min);
+        panel.add(cb30Min);
+        panel.add(cb1Hour);
+        panel.add(cb1Day);
+        panel.add(cb3Days);
+        panel.add(cb1Week);
 
         npGbc.gridx = 1;
         npGbc.gridy = 2;
         npGbc.gridwidth = 2;
-        notificationPanel.add(checkBoxPanel, npGbc);
+        notificationPanel.add(panel, npGbc);
 
         JButton saveButton = new JButton("저장");
-        saveButton.addActionListener(e -> {
-            String selectedSubject = (String) subjectComboBox.getSelectedItem();
-            String selectedEvent = (String) eventComboBox.getSelectedItem();
-            ArrayList<String> notificationTimes = new ArrayList<>();
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String selectedSubject = (String) subjectComboBox.getSelectedItem();
+                String selectedEvent = (String) eventComboBox.getSelectedItem();
+                ArrayList<Integer> notificationTimes = new ArrayList<>();
 
-            if (cb5Min.isSelected()) notificationTimes.add("5분 전");
-            if (cb10Min.isSelected()) notificationTimes.add("10분 전");
-            if (cb15Min.isSelected()) notificationTimes.add("15분 전");
-            if (cb30Min.isSelected()) notificationTimes.add("30분 전");
-            if (cb1Hour.isSelected()) notificationTimes.add("1시간 전");
-            if (cb1Day.isSelected()) notificationTimes.add("하루 전");
-            if (cb3Days.isSelected()) notificationTimes.add("3일 전");
-            if (cb1Week.isSelected()) notificationTimes.add("일주일 전");
+                if (cb5Min.isSelected()) notificationTimes.add(1);
+                if (cb10Min.isSelected()) notificationTimes.add(2);
+                if (cb15Min.isSelected()) notificationTimes.add(3);
+                if (cb30Min.isSelected()) notificationTimes.add(4);
+                if (cb1Hour.isSelected()) notificationTimes.add(5);
+                if (cb1Day.isSelected()) notificationTimes.add(6);
+                if (cb3Days.isSelected()) notificationTimes.add(7);
+                if (cb1Week.isSelected()) notificationTimes.add(8);
 
-            saveNotificationSettings(selectedSubject, selectedEvent, notificationTimes);
-            JOptionPane.showMessageDialog(f, "알림 설정이 저장되었습니다.");
-            
-            cb5Min.setSelected(false);
-            cb10Min.setSelected(false);
-            cb15Min.setSelected(false);
-            cb30Min.setSelected(false);
-            cb1Hour.setSelected(false);
-            cb1Day.setSelected(false);
-            cb3Days.setSelected(false);
-            cb1Week.setSelected(false);
+                saveNotificationSettings(selectedSubject, selectedEvent, notificationTimes);
+                JOptionPane.showMessageDialog(f, "알림 설정이 저장되었습니다.");
+
+                cb5Min.setSelected(false);
+                cb10Min.setSelected(false);
+                cb15Min.setSelected(false);
+                cb30Min.setSelected(false);
+                cb1Hour.setSelected(false);
+                cb1Day.setSelected(false);
+                cb3Days.setSelected(false);
+                cb1Week.setSelected(false);
+            }
         });
-        
+
         npGbc.gridx = 0;
         npGbc.gridy = 3;
         npGbc.gridwidth = 3;
@@ -285,29 +290,36 @@ public class SettingFrame {
         }
     }
 
-    private static void saveNotificationSettings(String subject, String event, ArrayList<String> times) {
+    private static void saveNotificationSettings(String selectedSubject, String selectedEvent, ArrayList<Integer> notificationTimes) {
         StringBuilder timeString = new StringBuilder();
-        for (String time : times) {
+        for (Integer time : notificationTimes) {
             if (timeString.length() > 0) timeString.append(",");
             timeString.append(time);
         }
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGTASKS, USERSETTINGEVENTS (TASK_NAME, EVENT, ALERT_TIME) VALUES (?, ?, ?)")) {
-            pstmt.setString(1, subject);
-            pstmt.setString(2, event);
-            pstmt.setString(3, timeString.toString());
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGTASKS (TASK_NAME, ALERT_TIME) VALUES (?, ?)")) {
+            pstmt.setString(1, selectedSubject);
+            pstmt.setString(2, timeString.toString());
             pstmt.executeUpdate();
-        } catch (SQLException e) {
+            } catch (SQLException e) {
             e.printStackTrace();
-        }
+            }
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+                PreparedStatement pstmt = conn.prepareStatement("INSERT INTO USERSETTINGEVENTS (EVENT_NAME, ALERT_TIME) VALUES (?, ?)")) {
+               pstmt.setString(1, selectedEvent);
+               pstmt.setString(2, timeString.toString());
+               pstmt.executeUpdate();
+               } catch (SQLException e) {
+               e.printStackTrace();
+           }
     }
 
-    private static void saveSubjectColor(String subject, Color color) {
-        String colorString = String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    private static void saveSubjectColor(String selectedSubject, Color newcolor) {
+        String colorString = String.format("#%02x%02x%02x", newcolor.getRed(), newcolor.getGreen(), newcolor.getBlue());
         try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement("UPDATE USERSETTINGTASKS SET COLOR = ? WHERE TASK_NAME = ?")) {
             pstmt.setString(1, colorString);
-            pstmt.setString(2, subject);
+            pstmt.setString(2, selectedSubject);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
