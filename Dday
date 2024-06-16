@@ -1,3 +1,4 @@
+
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
@@ -30,7 +31,7 @@ public class DDay {
         Map<String, List<ScheduleItem>> scheduleMap = new HashMap<>();
 
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
-             PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, task, importance, completed FROM Schedule")) {
+             PreparedStatement ps = conn.prepareStatement("SELECT subject, year, month, day, time, task, importance, completed FROM Schedule")) {
 
             ResultSet rs = ps.executeQuery();
 
@@ -41,6 +42,7 @@ public class DDay {
                 int year = rs.getInt("year");
                 int month = rs.getInt("month");
                 int day = rs.getInt("day");
+                String time = rs.getString("time");
                 String task = rs.getString("task");
                 int importance = rs.getInt("importance");
                 boolean completed = rs.getInt("completed") == 1;
@@ -53,7 +55,7 @@ public class DDay {
                     continue;
                 }
 
-                ScheduleItem item = new ScheduleItem(subject, targetDate, task, importance, completed);
+                ScheduleItem item = new ScheduleItem(subject, targetDate, time, task, importance, completed);
                 String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
 
                 if (!completed) {
@@ -81,7 +83,7 @@ public class DDay {
 
                 for (ScheduleItem item : itemList) {
                     JPanel itemPanel = new JPanel(new BorderLayout());
-                    JCheckBox taskCheckBox = new JCheckBox(item.getSubject() + ") " + item.getTask());
+                    JCheckBox taskCheckBox = new JCheckBox(item.getSubject() + ") " + item.getTask() + " " + item.getTime());
                     taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18));
                     taskCheckBox.setSelected(item.isCompleted());
                     toggleStrikeThrough(taskCheckBox, item.isCompleted());
@@ -131,25 +133,25 @@ public class DDay {
     }
 
     private static void toggleStrikeThrough(JCheckBox checkBox) {
-        checkBox.addActionListener(e -> {
-            boolean completed = checkBox.isSelected();
-            String task = checkBox.getText().substring(checkBox.getText().indexOf(")") + 2);
+        boolean completed = checkBox.isSelected();
+        String text = checkBox.getText();
+        String task = text.substring(text.indexOf(")") + 2, text.lastIndexOf(" "));
 
-            updateDatabase(task, completed);
-        });
+        updateDatabase(task, completed);
 
-        if (checkBox.isSelected()) {
-            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>");
+        if (completed) {
+            checkBox.setText("<html><strike>" + text + "</strike></html>");
         } else {
-            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
+            checkBox.setText(text.replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
 
     private static void toggleStrikeThrough(JCheckBox checkBox, boolean isCompleted) {
+        String text = checkBox.getText();
         if (isCompleted) {
-            checkBox.setText("<html><strike>" + checkBox.getText() + "</strike></html>");
+            checkBox.setText("<html><strike>" + text + "</strike></html>");
         } else {
-            checkBox.setText(checkBox.getText().replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
+            checkBox.setText(text.replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
 
@@ -169,13 +171,15 @@ public class DDay {
     private static class ScheduleItem {
         private final String subject;
         private final LocalDate date;
+        private final String time;
         private final String task;
         private final int importance;
         private final boolean completed;
 
-        public ScheduleItem(String subject, LocalDate date, String task, int importance, boolean completed) {
+        public ScheduleItem(String subject, LocalDate date, String time, String task, int importance, boolean completed) {
             this.subject = subject;
             this.date = date;
+            this.time = time;
             this.task = task;
             this.importance = importance;
             this.completed = completed;
@@ -187,6 +191,10 @@ public class DDay {
 
         public LocalDate getDate() {
             return date;
+        }
+
+        public String getTime() {
+            return time;
         }
 
         public String getTask() {
