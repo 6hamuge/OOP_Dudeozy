@@ -1,6 +1,7 @@
 package dudeozy;
 
 import javax.swing.*;
+import javax.swing.event.*;
 import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
@@ -82,6 +83,27 @@ public class DudeozyPlanner {
         desktopPane6.add(internalFrame6);
         tabbedPane.addTab("사용자 설정", desktopPane6);
        
+        tabbedPane.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                int selectedIndex = tabbedPane.getSelectedIndex();
+                if (selectedIndex == 0) { // MainPage 탭이 선택될 때
+                	mainPage.todayListModel.clear();
+                    mainPage.fetchTodayTasks();
+                } else if (selectedIndex == 3) {
+                	// Get the Stactics internal frame
+                    Stactics stacticsFrame = stactics; // 기존 인스턴스 재사용
+
+                    // Refresh the statistics data
+                    JInternalFrame statsInternalFrame = stacticsFrame.getInternalFrame();
+                    statsInternalFrame.getContentPane().removeAll();
+                    statsInternalFrame.getContentPane().add(stacticsFrame.getTabbedPane(), BorderLayout.CENTER);
+                    statsInternalFrame.revalidate();
+                    statsInternalFrame.repaint();
+                }
+            }
+        });
+        
         // 메인 프레임에 탭 패널 추가
         mainFrame.getContentPane().add(tabbedPane, BorderLayout.CENTER);
         
