@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Recommend {
-    JInternalFrame frame;
+    //JFrame frame;
+	JInternalFrame frame;
     private Connection connection;
 
     public Recommend() throws SQLException {
@@ -71,7 +72,7 @@ public class Recommend {
         }
 
         frame = new JInternalFrame("Recommendation Panel");
-        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
 
         JPanel panel = new JPanel();
@@ -117,4 +118,5 @@ public class Recommend {
     public JInternalFrame getInternalFrame() {
         return frame;
     }
+
 }
