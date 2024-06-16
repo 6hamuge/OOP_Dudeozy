@@ -1,4 +1,4 @@
-package doduzy;
+package dudeozy;
 
 import java.sql.*;
 import java.awt.*;
@@ -21,10 +21,10 @@ public class LoginLogin {
 	Statement stmt = null;
 	ResultSet rs = null;
 	
-	String db_name="데이터베이스 스키마 이름";
+	String db_name="Dudeozy";
     String db_route="jdbc:oracle:thin:@localhost:1521:xe"; // Oracle에 맞는 URL 형식
-	String db_id = "system"; // Oracle 데이터베이스 사용자 ID
-	String db_password = "oopdata"; // Oracle 데이터베이스 비밀번호
+	String db_id = "SYSTEM"; // Oracle 데이터베이스 사용자 ID
+	String db_password = "foroopcurie"; // Oracle 데이터베이스 비밀번호
 	
 	// 생성자 Constructor ---------------------------->
 	public LoginLogin() {
@@ -90,6 +90,17 @@ public class LoginLogin {
 				if (USER_ID.getText().equals(rs.getString("ID")) && USER_PW.getText().equals(rs.getString("PW"))) {
 					JOptionPane.showMessageDialog(null, rs.getString("NAME") + "님 환영합니다 :)");
 					USER_ID.requestFocus();
+					//DudeozyPlanner 실행
+					frame.dispose();
+					EventQueue.invokeLater(new Runnable() {
+						public void run() {
+							try {
+								DudeozyPlanner.main(new String[] {});
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					});
 					return;
 				}			
 			} // 다했지만, 안나온다면 return을 만나지못했음으로, 아래 내용이 실행
