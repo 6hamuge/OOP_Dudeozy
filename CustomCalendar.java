@@ -15,14 +15,14 @@ public class CustomCalendar extends JPanel {
     private JComboBox<Integer> yearBox;
     private JPanel calendarPanel;
     private MainPage mainPage;
-    private List<JInternalFrame> internalFrames; // 클래스 레벨에서 리스트 선언
+    private List<JInternalFrame> internalFrames; 
     private static final int FRAME_OFFSET = 30; // 프레임 간의 오프셋
     private ColorHelper colorHelper;
 
     public CustomCalendar(MainPage mainPage) {
         this.mainPage = mainPage;
         this.internalFrames = new ArrayList<>(); // 생성자에서 리스트 초기화
-        this.colorHelper = new ColorHelper(mainPage); // ColorHelper 인스턴스 생성
+        this.colorHelper = new ColorHelper(mainPage); // ColorHelper 가져오기
 
         setLayout(new BorderLayout());
 
@@ -185,11 +185,6 @@ public class CustomCalendar extends JPanel {
                 
                 String hour = timeHHMM.substring(0,2);
                 String minute = timeHHMM.substring(2);
-                // 특정 색상으로 표시할 수 있도록
-                Color subjectColor = colorHelper.getSubjectColor(subject);
-                String subjectSymbol = "\u25CF"; // ● 기호 (유니코드)
-                //JLabel subjectSymbol = new JLabel("\u25CF");
-                //subjectSymbol.setForeground(subjectColor);
 
                 // 데이터가 완료됐는지 여부에 따라 표시
                 if (isTaskCompleted(subject, year, month, day)) {
