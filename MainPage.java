@@ -31,7 +31,7 @@ public class MainPage {
 			String password = "foroopcurie";
 			conn = DriverManager.getConnection(url,user,password);
 			
-			// isValid 메서드를 사용하여 연결 상태 확인
+			// 데이터베이스 연결 상태 확인
 			boolean isConnected = conn.isValid(5); // 5초 동안 연결 상태 확인
 			
 			if (isConnected) {
@@ -39,6 +39,7 @@ public class MainPage {
 			} else {
 				System.out.println("데이터베이스 연결되지 않음");
 			}
+			
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -51,11 +52,11 @@ public class MainPage {
         
         // 캘린더 설정 ======================================================================
         // 캘린더 가져오기
-		CustomCalendar Calendar = new CustomCalendar(this);
+		CustomCalendar customCalendar = new CustomCalendar(this);
 		
 		// JInternalFrame 캘린더 설정
 		JInternalFrame calendar = new JInternalFrame("Calendar", true, true, true, true);
-		calendar.getContentPane().add(Calendar); 
+		calendar.getContentPane().add(customCalendar); 
 		calendar.setSize(960, 750);
 		calendar.setResizable(true); 
 		calendar.setIconifiable(false); 
@@ -199,7 +200,7 @@ public class MainPage {
 
 	
 	// 오늘 todoList를 설정하는 메서드 =============================================================================
-	private void fetchTodayTasks() {
+	public void fetchTodayTasks() {
 	    try {
 	        LocalDate today = LocalDate.now();
 	        String sql = "SELECT subject, time, task, completed FROM Schedule WHERE year = ? AND month = ? AND day = ?";
@@ -219,7 +220,7 @@ public class MainPage {
 	            String hour = timeHHMM.substring(0, 2);
 	            String minute = timeHHMM.substring(2);
 
-	            // UI 업데이트는 EDT에서 처리해야 함
+	           
 	            SwingUtilities.invokeLater(() -> {
 	                if (completedValue == 1) {
 	                    todayListModel.addElement(subject + ") " + hour + ":" + minute + " - " + task + " (완료됨)");
@@ -356,6 +357,7 @@ public class MainPage {
 	public JInternalFrame getInternalFrame() {
 	    return jf;
 	}
+	
 	public JDesktopPane getDesktopPane() {
         return desktopPane;
     }	
