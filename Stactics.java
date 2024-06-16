@@ -11,20 +11,9 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import java.awt.*;
-import javax.swing.*;
-
-import java.sql.*;
-import java.time.LocalDate;
-import java.time.DayOfWeek;
-import java.time.temporal.WeekFields;
-import java.util.*;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class Stactics {
-    //JFrame jf;
-	JInternalFrame jf;
+    JInternalFrame jf;
     JTabbedPane tabpane;
     Connection conn;
 
@@ -40,7 +29,6 @@ public class Stactics {
             return;
         }
 
-        //jf = new JFrame();
         jf = new JInternalFrame();
         tabpane = new JTabbedPane();
 
@@ -54,29 +42,40 @@ public class Stactics {
         tabpane.addTab("월", three);
         tabpane.addTab("년", four);
 
-        // 데이터베이스에서 데이터를 가져와 진행상황을 설정
+        jf.getContentPane().add(tabpane, BorderLayout.CENTER);
+        jf.setSize(1000, 800);
+        jf.setMaximumSize(new Dimension(1000, 800));
+        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jf.setVisible(true);
+
+        updateTabs();
+    }
+
+    public void updateTabs() {
         List<ProgressData> progressDataList = fetchProgressData();
 
-        // 일별 진행상황 게이지
+        updateDayTab(progressDataList);
+        updateWeekTab(progressDataList);
+        updateMonthTab(progressDataList);
+        updateYearTab(progressDataList);
+    }
+
+    private void updateDayTab(List<ProgressData> progressDataList) {
+        JPanel one = new JPanel(new GridLayout(0, 1, 10, 10));
         JLabel label1 = new JLabel("일별 진행상황");
         one.add(label1);
 
-        // 오늘 날짜 계산
         LocalDate today = LocalDate.now();
-
-        // 오늘 날짜의 데이터 필터링
         List<ProgressData> todayData = progressDataList.stream()
                 .filter(d -> d.year == today.getYear() && d.month == today.getMonthValue() && d.day == today.getDayOfMonth())
                 .collect(Collectors.toList());
 
-        // 오늘 날짜 기준 전체 진행 상황 게이지 추가
         JProgressBar overallProgressBar = new JProgressBar();
         overallProgressBar.setValue(calculateOverallProgress(todayData));
         overallProgressBar.setString("전체 진행상황: " + overallProgressBar.getValue() + "%");
         overallProgressBar.setStringPainted(true);
         one.add(overallProgressBar);
 
-        // 과목별 진행 상황 합산 및 게이지 추가
         Map<String, List<ProgressData>> todaySubjectDataMap = todayData.stream()
                 .collect(Collectors.groupingBy(d -> d.subject));
 
@@ -92,43 +91,65 @@ public class Stactics {
             one.add(progressBar);
         }
 
-        // 주별 진행상황
+        if (tabpane.getTabCount() > 0) {
+            tabpane.setComponentAt(0, one);
+        } else {
+            tabpane.addTab("일", one);
+        }
+    }
+
+    private void updateWeekTab(List<ProgressData> progressDataList) {
+        JPanel two = new JPanel(new BorderLayout());
         JLabel label21 = new JLabel("주별 진행상황");
         two.add(label21, BorderLayout.NORTH);
 
         JSplitPane splitPane1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new WeekBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "week"));
-        splitPane1.setResizeWeight(0.5); // Adjust the split ratio
+        splitPane1.setResizeWeight(0.5);
         two.add(splitPane1, BorderLayout.CENTER);
 
-        // 월별 진행상황
+        if (tabpane.getTabCount() > 1) {
+            tabpane.setComponentAt(1, two);
+        } else {
+            tabpane.addTab("주", two);
+        }
+    }
+
+    private void updateMonthTab(List<ProgressData> progressDataList) {
+        JPanel three = new JPanel(new BorderLayout());
         JLabel label31 = new JLabel("월별 진행상황");
         three.add(label31, BorderLayout.NORTH);
 
         JSplitPane splitPane2 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new MonthBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "month"));
-        splitPane2.setResizeWeight(0.5); // Adjust the split ratio
+        splitPane2.setResizeWeight(0.5);
         three.add(splitPane2, BorderLayout.CENTER);
 
-        // 연별 진행상황
+        if (tabpane.getTabCount() > 2) {
+            tabpane.setComponentAt(2, three);
+        } else {
+            tabpane.addTab("월", three);
+        }
+    }
+
+    private void updateYearTab(List<ProgressData> progressDataList) {
+        JPanel four = new JPanel(new BorderLayout());
         JLabel label41 = new JLabel("연별 진행상황");
         four.add(label41, BorderLayout.NORTH);
 
         JSplitPane splitPane3 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new YearBarChartPanel(progressDataList), new PieChartPanel(progressDataList, "year"));
-        splitPane3.setResizeWeight(0.5); // Adjust the split ratio
+        splitPane3.setResizeWeight(0.5);
         four.add(splitPane3, BorderLayout.CENTER);
 
-        jf.getContentPane().add(tabpane, BorderLayout.CENTER);
-        jf.setSize(1000, 800);
-        jf.setMaximumSize(new Dimension(1000, 800));
-        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        jf.setVisible(true);
+        if (tabpane.getTabCount() > 3) {
+            tabpane.setComponentAt(3, four);
+        } else {
+            tabpane.addTab("년", four);
+        }
     }
 
-    // 진행 상황 데이터를 데이터베이스에서 가져오는 메소드
     private List<ProgressData> fetchProgressData() {
         List<ProgressData> dataList = new ArrayList<>();
         try {
-            String query = "SELECT subject, task, completed, year, month, day " +
-                           "FROM Schedule";
+            String query = "SELECT subject, task, completed, year, month, day FROM Schedule";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
@@ -150,14 +171,12 @@ public class Stactics {
         return dataList;
     }
 
-    // 요일 계산 메소드
     private String getWeekday(int year, int month, int day) {
         LocalDate date = LocalDate.of(year, month, day);
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         return dayOfWeek.toString().substring(0, 3).toUpperCase();
     }
-    
-    // 전체 진행 상황을 계산하는 메소드
+
     private int calculateOverallProgress(List<ProgressData> data) {
         int totalProgress = 0;
         for (ProgressData d : data) {
@@ -214,71 +233,76 @@ public class Stactics {
                 values[i] = weekData.getOrDefault(labels[i], 0);
             }
 
+            drawBarChart(g, labels, values);
+        }
+
+        private void drawBarChart(Graphics g, String[] labels, int[] values) {
             int width = getWidth();
             int height = getHeight();
             int barWidth = width / values.length;
-            int maxBarHeight = height - 30;
-            int maxValue = Arrays.stream(values).max().orElse(1);
 
-            g.setColor(Color.BLUE);
+            int maxVal = Arrays.stream(values).max().orElse(1);
+
             for (int i = 0; i < values.length; i++) {
-                int barHeight = (int) ((values[i] / (double) maxValue) * maxBarHeight);
-                int x = i * barWidth;
-                int y = height - barHeight - 20;
-                g.fillRect(x, y, barWidth - 10, barHeight);
-                g.drawString(labels[i], x + (barWidth / 2) - 5, height - 5);
+                int barHeight = (int) ((double) values[i] / maxVal * height);
+                g.setColor(Color.BLUE);
+                g.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
+                g.setColor(Color.BLACK);
+                g.drawString(labels[i], i * barWidth + (barWidth / 2) - 10, height - 5);
+                g.drawString(String.valueOf(values[i]), i * barWidth + (barWidth / 2) - 10, height - barHeight - 5);
             }
         }
     }
 
     class MonthBarChartPanel extends JPanel {
-        Map<String, Integer> monthData;
+        Map<Integer, Long> monthData;
 
         MonthBarChartPanel(List<ProgressData> data) {
             LocalDate now = LocalDate.now();
             int currentMonth = now.getMonthValue();
             int currentYear = now.getYear();
-            WeekFields weekFields = WeekFields.of(Locale.getDefault());
 
             this.monthData = data.stream()
-                                 .filter(d -> d.progress == 100)
-                                 .filter(d -> d.year == currentYear && d.month == currentMonth)
-                                 .collect(Collectors.groupingBy(d -> {
-                                     LocalDate date = LocalDate.of(d.year, d.month, d.day);
-                                     int weekOfMonth = date.get(weekFields.weekOfMonth());
-                                     return "Week " + weekOfMonth;
-                                 }, Collectors.summingInt(d -> 1)));
+                                .filter(d -> d.progress == 100)
+                                .filter(d -> d.month == currentMonth && d.year == currentYear)
+                                .collect(Collectors.groupingBy(d -> d.day, Collectors.counting()));
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            String[] labels = {"Week 1", "Week 2", "Week 3", "Week 4", "Week 5"};
-            int[] values = new int[labels.length];
+            int daysInMonth = LocalDate.now().lengthOfMonth();
+            String[] labels = new String[daysInMonth];
+            int[] values = new int[daysInMonth];
 
-            for (int i = 0; i < labels.length; i++) {
-                values[i] = monthData.getOrDefault(labels[i], 0);
+            for (int i = 0; i < daysInMonth; i++) {
+                labels[i] = String.valueOf(i + 1);
+                values[i] = monthData.getOrDefault(i + 1, 0L).intValue();
             }
 
+            drawBarChart(g, labels, values);
+        }
+
+        private void drawBarChart(Graphics g, String[] labels, int[] values) {
             int width = getWidth();
             int height = getHeight();
             int barWidth = width / values.length;
-            int maxBarHeight = height - 30;
-            int maxValue = Arrays.stream(values).max().orElse(1);
 
-            g.setColor(Color.BLUE);
+            int maxVal = Arrays.stream(values).max().orElse(1);
+
             for (int i = 0; i < values.length; i++) {
-                int barHeight = (int) ((values[i] / (double) maxValue) * maxBarHeight);
-                int x = i * barWidth;
-                int y = height - barHeight - 20;
-                g.fillRect(x, y, barWidth - 10, barHeight);
-                g.drawString(labels[i], x + (barWidth / 2) - 5, height - 5);
+                int barHeight = (int) ((double) values[i] / maxVal * height);
+                g.setColor(Color.GREEN);
+                g.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
+                g.setColor(Color.BLACK);
+                g.drawString(labels[i], i * barWidth + (barWidth / 2) - 10, height - 5);
+                g.drawString(String.valueOf(values[i]), i * barWidth + (barWidth / 2) - 10, height - barHeight - 5);
             }
         }
     }
 
     class YearBarChartPanel extends JPanel {
-        Map<String, Integer> yearData;
+        Map<Integer, Long> yearData;
 
         YearBarChartPanel(List<ProgressData> data) {
             LocalDate now = LocalDate.now();
@@ -287,141 +311,103 @@ public class Stactics {
             this.yearData = data.stream()
                                 .filter(d -> d.progress == 100)
                                 .filter(d -> d.year == currentYear)
-                                .collect(Collectors.groupingBy(d -> String.valueOf(d.month), Collectors.summingInt(d -> 1)));
+                                .collect(Collectors.groupingBy(d -> d.month, Collectors.counting()));
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            String[] labels = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
+            String[] labels = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
             int[] values = new int[labels.length];
 
             for (int i = 0; i < labels.length; i++) {
-                values[i] = yearData.getOrDefault(labels[i], 0);
+                values[i] = yearData.getOrDefault(i + 1, 0L).intValue();
             }
 
+            drawBarChart(g, labels, values);
+        }
+
+        private void drawBarChart(Graphics g, String[] labels, int[] values) {
             int width = getWidth();
             int height = getHeight();
             int barWidth = width / values.length;
-            int maxBarHeight = height - 30;
-            int maxValue = Arrays.stream(values).max().orElse(1);
 
-            g.setColor(Color.BLUE);
+            int maxVal = Arrays.stream(values).max().orElse(1);
+
             for (int i = 0; i < values.length; i++) {
-                int barHeight = (int) ((values[i] / (double) maxValue) * maxBarHeight);
-                int x = i * barWidth;
-                int y = height - barHeight - 20;
-                g.fillRect(x, y, barWidth - 10, barHeight);
-                g.drawString(labels[i], x + (barWidth / 2) - 5, height - 5);
+                int barHeight = (int) ((double) values[i] / maxVal * height);
+                g.setColor(Color.ORANGE);
+                g.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
+                g.setColor(Color.BLACK);
+                g.drawString(labels[i], i * barWidth + (barWidth / 2) - 10, height - 5);
+                g.drawString(String.valueOf(values[i]), i * barWidth + (barWidth / 2) - 10, height - barHeight - 5);
             }
         }
     }
 
     class PieChartPanel extends JPanel {
-        Map<String, Long> subjectData;
+        Map<String, Long> pieData;
 
-        PieChartPanel(List<ProgressData> data, String period) {
-            if (period.equals("week")) {
-                this.subjectData = calculateWeeklySubjectData(data);
-            } else if (period.equals("month")) {
-                this.subjectData = calculateMonthlySubjectData(data);
-            } else if (period.equals("year")) {
-                this.subjectData = calculateYearlySubjectData(data);
-            } else {
-                this.subjectData = new HashMap<>();
+        PieChartPanel(List<ProgressData> data, String type) {
+            LocalDate now = LocalDate.now();
+
+            if (type.equals("week")) {
+                WeekFields weekFields = WeekFields.of(Locale.getDefault());
+                int currentWeek = now.get(weekFields.weekOfYear());
+                int currentYear = now.getYear();
+
+                this.pieData = data.stream()
+                        .filter(d -> d.progress == 100)
+                        .filter(d -> {
+                            LocalDate date = LocalDate.of(d.year, d.month, d.day);
+                            return date.get(weekFields.weekOfYear()) == currentWeek && d.year == currentYear;
+                        })
+                        .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
+            } else if (type.equals("month")) {
+                int currentMonth = now.getMonthValue();
+                int currentYear = now.getYear();
+
+                this.pieData = data.stream()
+                        .filter(d -> d.progress == 100)
+                        .filter(d -> d.month == currentMonth && d.year == currentYear)
+                        .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
+            } else if (type.equals("year")) {
+                int currentYear = now.getYear();
+
+                this.pieData = data.stream()
+                        .filter(d -> d.progress == 100)
+                        .filter(d -> d.year == currentYear)
+                        .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
             }
-        }
-
-        private Map<String, Long> calculateWeeklySubjectData(List<ProgressData> data) {
-            LocalDate now = LocalDate.now();
-            WeekFields weekFields = WeekFields.of(Locale.getDefault());
-            int currentWeek = now.get(weekFields.weekOfYear());
-            int currentYear = now.getYear();
-
-            return data.stream()
-                       .filter(d -> d.progress == 100)
-                       .filter(d -> {
-                           LocalDate date = LocalDate.of(d.year, d.month, d.day);
-                           return date.get(weekFields.weekOfYear()) == currentWeek && d.year == currentYear;
-                       })
-                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
-        }
-
-        private Map<String, Long> calculateMonthlySubjectData(List<ProgressData> data) {
-            LocalDate now = LocalDate.now();
-            int currentMonth = now.getMonthValue();
-            int currentYear = now.getYear();
-
-            return data.stream()
-                       .filter(d -> d.progress == 100)
-                       .filter(d -> d.year == currentYear && d.month == currentMonth)
-                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
-        }
-
-        private Map<String, Long> calculateYearlySubjectData(List<ProgressData> data) {
-            LocalDate now = LocalDate.now();
-            int currentYear = now.getYear();
-
-            return data.stream()
-                       .filter(d -> d.progress == 100)
-                       .filter(d -> d.year == currentYear)
-                       .collect(Collectors.groupingBy(d -> d.subject, Collectors.counting()));
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            int width = getWidth();
-            int height = getHeight();
-            int diameter = Math.min(width, height) - 10;
+            drawPieChart(g);
+        }
 
-            int total = subjectData.values().stream().mapToInt(Long::intValue).sum();
+        private void drawPieChart(Graphics g) {
+            int total = pieData.values().stream().mapToInt(Long::intValue).sum();
             int startAngle = 0;
-            List<Color> colors = Arrays.asList(new Color(255, 179, 186), new Color(255, 223, 186), new Color(255, 255, 186),
-                                               new Color(186, 255, 201), new Color(186, 225, 255), new Color(255, 186, 255));
 
-            int colorIndex = 0;
-            for (Map.Entry<String, Long> entry : subjectData.entrySet()) {
-                int arcAngle = (int) (360.0 * entry.getValue() / total);
-                g.setColor(colors.get(colorIndex % colors.size()));
-                g.fillArc(5, 5, diameter, diameter, startAngle, arcAngle);
-
-                // 과목 이름을 원 안에 표시
-                int angle = startAngle + arcAngle / 2;
-                double radian = Math.toRadians(angle);
-                int x = (int) (width / 2 + (diameter / 3) * Math.cos(radian));
-                int y = (int) (height / 2 + (diameter / 3) * Math.sin(radian));
-                g.setColor(Color.BLACK);
-                g.drawString(entry.getKey(), x, y);
-
+            int i = 0;
+            for (Map.Entry<String, Long> entry : pieData.entrySet()) {
+                int arcAngle = (int) ((entry.getValue() / (double) total) * 360);
+                g.setColor(getColor(i));
+                g.fillArc(10, 10, getWidth() - 20, getHeight() - 20, startAngle, arcAngle);
                 startAngle += arcAngle;
-                colorIndex++;
-            }
-
-            // Draw labels
-            int x = diameter + 10;
-            int y = 20;
-            colorIndex = 0;
-            for (String subject : subjectData.keySet()) {
-                g.setColor(colors.get(colorIndex++ % colors.size()));
-                g.fillRect(x, y - 10, 10, 10);
-                g.setColor(Color.BLACK);
-                g.drawString(subject, x + 15, y);
-                y += 20;
+                i++;
             }
         }
+        
+        private Color getColor(int index) {
+            Color[] colors = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.ORANGE, Color.CYAN, Color.MAGENTA};
+            return colors[index % colors.length];
+        }
     }
-    /*
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Stactics());
-    }  
-    */
-    
     public JInternalFrame getInternalFrame() {
-    	return jf;
-    }
+	    return jf;
+	}
 
-    public JTabbedPane getTabbedPane() {
-        return tabpane;
-    }
 }
