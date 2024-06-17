@@ -1,16 +1,21 @@
+package dudeozy;
+
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
 
 public class DDay {
-////전체 틀 만들어!!////
-	private JInternalFrame frame;
+
+    private JInternalFrame frame;
     private JDesktopPane desktopPane;
+    private JScrollPane scrollPane; // 스크롤 기능 추가
 
     public DDay() {
         setUIFont(new FontUIResource(new Font("Malgun Gothic", Font.PLAIN, 18)));
@@ -20,13 +25,15 @@ public class DDay {
         frame.setSize(800, 600);
 
         desktopPane = new JDesktopPane();
-        frame.add(desktopPane, BorderLayout.CENTER);
+        desktopPane.setLayout(new GridLayout(0, 4, 10, 10)); // 4개의 열로 배치하고 간격 추가
+        scrollPane = new JScrollPane(desktopPane); // 스크롤 가능한 패널로 변환
+        frame.add(scrollPane, BorderLayout.CENTER);
 
         loadDataFromDatabase();
 
         frame.setVisible(true);
     }
-/////////
+
     private void loadDataFromDatabase() {
         Map<String, List<ScheduleItem>> scheduleMap = new HashMap<>();
 
@@ -42,7 +49,14 @@ public class DDay {
                 int year = rs.getInt("year");
                 int month = rs.getInt("month");
                 int day = rs.getInt("day");
-                String time = rs.getString("time");
+                String timeStr = rs.getString("time");
+
+                // timeStr이 null이면 continue하여 다음 레코드로 넘어감
+                if (timeStr == null) {
+                    continue;
+                }
+
+                LocalTime time = LocalTime.of(Integer.parseInt(timeStr.substring(0, 2)), Integer.parseInt(timeStr.substring(2))); // LocalTime으로 시간 파싱
                 String task = rs.getString("task");
                 int importance = rs.getInt("importance");
                 boolean completed = rs.getInt("completed") == 1;
@@ -54,8 +68,8 @@ public class DDay {
                 if (targetDate.isBefore(currentDate)) {
                     continue;
                 }
-                
-                String formattedTime = " (" + time.substring(0, 2) + ":" + time.substring(2) + ")";//시간!
+
+                String formattedTime = " (" + time.format(DateTimeFormatter.ofPattern("HH:mm")) + ")"; // 시간 포맷팅 추가
 
                 ScheduleItem item = new ScheduleItem(subject, targetDate, time, task, importance, completed);
                 String dDayText = (dDay == 0) ? "D-day" : "D-" + dDay;
@@ -69,23 +83,18 @@ public class DDay {
             // D-day가 빠른 순서대로 정렬 (D-day부터 시작하도록)
             Collections.sort(entryList, Comparator.comparingLong(e -> (e.getKey().equals("D-day") ? 0 : Long.parseLong(e.getKey().substring(2)))));
 
-            int yOffset = 10;
             for (Map.Entry<String, List<ScheduleItem>> entry : entryList) {
                 List<ScheduleItem> itemList = entry.getValue();
                 // 중요도에 따라 내림차순으로 정렬
                 itemList.sort(Comparator.comparingInt(ScheduleItem::getImportance).reversed());
-
-                JInternalFrame internalFrame = new JInternalFrame(entry.getKey(), true, true, true, true);
-                internalFrame.setSize(400, 300);
-                internalFrame.setLocation(20, yOffset);
-                internalFrame.setLayout(new BorderLayout());
 
                 JPanel dDayPanel = new JPanel();
                 dDayPanel.setLayout(new BoxLayout(dDayPanel, BoxLayout.Y_AXIS));
 
                 for (ScheduleItem item : itemList) {
                     JPanel itemPanel = new JPanel(new BorderLayout());
-                    JCheckBox taskCheckBox = new JCheckBox(item.getSubject() + ") " + item.getTask() + " " + item.getTime());
+                    String formattedTime = " (" + item.getTime().format(DateTimeFormatter.ofPattern("HH:mm")) + ")";
+                    JCheckBox taskCheckBox = new JCheckBox(item.getSubject() + ") " + item.getTask() + formattedTime);
                     taskCheckBox.setFont(new Font("Malgun Gothic", Font.PLAIN, 18));
                     taskCheckBox.setSelected(item.isCompleted());
                     toggleStrikeThrough(taskCheckBox, item.isCompleted());
@@ -93,9 +102,9 @@ public class DDay {
 
                     JLabel dateLabel = new JLabel();
                     if (entry.getKey().equals("D-day")) {
-                        dateLabel.setText("오늘");
+                        dateLabel.setText("");
                     } else {
-                        dateLabel.setText("D-" + entry.getKey().substring(2) + " / " + item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth());
+                        dateLabel.setText(item.getDate().getMonthValue() + "." + item.getDate().getDayOfMonth());
                     }
                     dateLabel.setFont(new Font("Malgun Gothic", Font.PLAIN, 16));
 
@@ -106,11 +115,13 @@ public class DDay {
                     dDayPanel.add(itemPanel);
                 }
 
+                JInternalFrame internalFrame = new JInternalFrame(entry.getKey(), true, true, true, true);
+                internalFrame.setSize(400, 300);
+                internalFrame.setLayout(new BorderLayout());
                 internalFrame.add(new JScrollPane(dDayPanel));
-                desktopPane.add(internalFrame);
                 internalFrame.setVisible(true);
 
-                yOffset += 40;
+                desktopPane.add(internalFrame); // desktopPane에 추가
             }
 
         } catch (Exception e) {
@@ -133,7 +144,7 @@ public class DDay {
         LocalDate currentDate = LocalDate.now();
         return ChronoUnit.DAYS.between(currentDate, targetDate);
     }
-/////취소선!////
+
     private static void toggleStrikeThrough(JCheckBox checkBox) {
         boolean completed = checkBox.isSelected();
         String text = checkBox.getText();
@@ -156,7 +167,7 @@ public class DDay {
             checkBox.setText(text.replaceAll("<html><strike>", "").replaceAll("</strike></html>", ""));
         }
     }
-////반영하기!////
+
     private static void updateDatabase(String task, boolean completed) {
         try (Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe", "SYSTEM", "foroopcurie");
              PreparedStatement ps = conn.prepareStatement("UPDATE Schedule SET completed = ? WHERE task = ?")) {
@@ -169,16 +180,16 @@ public class DDay {
             e.printStackTrace();
         }
     }
-////////
+
     private static class ScheduleItem {
         private final String subject;
         private final LocalDate date;
-        private final String time;
+        private final LocalTime time;
         private final String task;
         private final int importance;
         private final boolean completed;
 
-        public ScheduleItem(String subject, LocalDate date, String time, String task, int importance, boolean completed) {
+        public ScheduleItem(String subject, LocalDate date, LocalTime time, String task, int importance, boolean completed) {
             this.subject = subject;
             this.date = date;
             this.time = time;
@@ -195,7 +206,7 @@ public class DDay {
             return date;
         }
 
-        public String getTime() {
+        public LocalTime getTime() {
             return time;
         }
 
@@ -210,6 +221,10 @@ public class DDay {
         public boolean isCompleted() {
             return completed;
         }
+    }
+    
+    JInternalFrame getInternalFrame() {
+    	return frame;
     }
 
     public static void main(String[] args) {
